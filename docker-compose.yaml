@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+
+  postgres-auth:
+    image: postgres:16
+    container_name: toolsharing-auth-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+
+  postgres-user:
+    image: postgres:16
+    container_name: toolsharing-user-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+
+  postgres-tool:
+    image: postgres:16
+    container_name: toolsharing-tool-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tool_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - tool_postgres_data:/var/lib/postgresql/data
+
+  postgres-booking:
+    image: postgres:16
+    container_name: toolsharing-booking-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: booking_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - booking_postgres_data:/var/lib/postgresql/data
+
+    # Add Redis for rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: toolsharing-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  auth_postgres_data:
+  user_postgres_data:
+  tool_postgres_data:
+  booking_postgres_data:
+  redis_data:
