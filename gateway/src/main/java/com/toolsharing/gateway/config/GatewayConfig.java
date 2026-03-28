@@ -42,7 +42,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(ipKeyResolver)))
-                        .uri("http://localhost:8081"))
+                        .uri("lb://AUTH-SERVICE"))  // Changed from http://localhost:8081
 
                 // Auth Service - Protected Routes
                 .route("auth-service-protected", r -> r
@@ -55,7 +55,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("http://localhost:8081"))
+                        .uri("lb://AUTH-SERVICE"))  // Changed from http://localhost:8081
 
                 // User Service
                 .route("user-service", r -> r
@@ -68,7 +68,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("http://localhost:8082"))
+                        .uri("lb://USER-SERVICE"))  // Changed from http://localhost:8082
 
                 // Tool Service - Public GET (browsing tools)
                 .route("tool-service-public", r -> r
@@ -82,7 +82,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(ipKeyResolver)))
-                        .uri("http://localhost:8083"))
+                        .uri("lb://TOOL-SERVICE"))  // Changed from http://localhost:8083
 
                 // Tool Service - Protected (POST, PUT, DELETE, PATCH) - EXCLUDES GET
                 .route("tool-service-protected", r -> r
@@ -96,9 +96,9 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("http://localhost:8083"))
+                        .uri("lb://TOOL-SERVICE"))  // Changed from http://localhost:8083
 
-                // Category Service
+                // Category Service (uses same TOOL-SERVICE)
                 .route("category-service", r -> r
                         .path("/api/categories/**")
                         .filters(f -> f
@@ -109,7 +109,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("http://localhost:8083"))
+                        .uri("lb://TOOL-SERVICE"))  // Changed from http://localhost:8083
 
                 // Booking Service
                 .route("booking-service", r -> r
@@ -122,7 +122,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("http://localhost:8084"))
+                        .uri("lb://BOOKING-SERVICE"))  // Changed from http://localhost:8084
 
                 .build();
     }
