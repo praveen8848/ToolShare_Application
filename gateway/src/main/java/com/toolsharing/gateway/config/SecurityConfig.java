@@ -29,18 +29,28 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",  // React dev
-                "http://localhost:8080",  // Gateway itself
-                "http://localhost:8081",  // Auth Service
-                "http://localhost:8082",  // User Service
-                "http://localhost:8083",  // Tool Service
-                "http://localhost:8084"   // Booking Service
+
+        // Allow only your frontend origin
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+
+        // Allow all common HTTP methods
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Allow all headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // Allow credentials (cookies, authorization headers)
         configuration.setAllowCredentials(true);
+
+        // How long the preflight request can be cached
         configuration.setMaxAge(3600L);
+
+        // Headers to expose to the browser
+        configuration.setExposedHeaders(Arrays.asList(
+                "Authorization", "X-User-Id", "X-Correlation-Id"
+        ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

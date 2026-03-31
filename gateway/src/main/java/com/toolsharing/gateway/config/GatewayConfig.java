@@ -31,6 +31,7 @@ public class GatewayConfig {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
 
+                // ==================== AUTH SERVICE ====================
                 // Auth Service - Public Routes
                 .route("auth-service-public", r -> r
                         .path("/api/auth/login", "/api/auth/register", "/api/auth/check-email")
@@ -42,7 +43,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(ipKeyResolver)))
-                        .uri("lb://AUTH-SERVICE"))  // Changed from http://localhost:8081
+                        .uri("lb://AUTH-SERVICE"))
 
                 // Auth Service - Protected Routes
                 .route("auth-service-protected", r -> r
@@ -55,9 +56,9 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("lb://AUTH-SERVICE"))  // Changed from http://localhost:8081
+                        .uri("lb://AUTH-SERVICE"))
 
-                // User Service
+                // ==================== USER SERVICE ====================
                 .route("user-service", r -> r
                         .path("/api/users/**")
                         .filters(f -> f
@@ -68,7 +69,22 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("lb://USER-SERVICE"))  // Changed from http://localhost:8082
+                        .uri("lb://USER-SERVICE"))
+
+                // ==================== TOOL SERVICE ====================
+                // IMPORTANT: Protected GET routes (must come BEFORE public GET)
+                .route("tool-service-protected-get", r -> r
+                        .path("/api/tools/my-tools", "/api/tools/user/**")
+                        .and().method("GET")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config(true)))
+                                .circuitBreaker(config -> config
+                                        .setName("tool-service")
+                                        .setFallbackUri("forward:/fallback/tool"))
+                                .requestRateLimiter(config -> config
+                                        .setRateLimiter(redisRateLimiter)
+                                        .setKeyResolver(userKeyResolver)))
+                        .uri("lb://TOOL-SERVICE"))
 
                 // Tool Service - Public GET (browsing tools)
                 .route("tool-service-public", r -> r
@@ -82,9 +98,9 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(ipKeyResolver)))
-                        .uri("lb://TOOL-SERVICE"))  // Changed from http://localhost:8083
+                        .uri("lb://TOOL-SERVICE"))
 
-                // Tool Service - Protected (POST, PUT, DELETE, PATCH) - EXCLUDES GET
+                // Tool Service - Protected (POST, PUT, DELETE, PATCH)
                 .route("tool-service-protected", r -> r
                         .path("/api/tools/**")
                         .and().method("POST", "PUT", "DELETE", "PATCH")
@@ -96,7 +112,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("lb://TOOL-SERVICE"))  // Changed from http://localhost:8083
+                        .uri("lb://TOOL-SERVICE"))
 
                 // Category Service (uses same TOOL-SERVICE)
                 .route("category-service", r -> r
@@ -109,9 +125,9 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("lb://TOOL-SERVICE"))  // Changed from http://localhost:8083
+                        .uri("lb://TOOL-SERVICE"))
 
-                // Booking Service
+                // ==================== BOOKING SERVICE ====================
                 .route("booking-service", r -> r
                         .path("/api/bookings/**")
                         .filters(f -> f
@@ -122,7 +138,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(config -> config
                                         .setRateLimiter(redisRateLimiter)
                                         .setKeyResolver(userKeyResolver)))
-                        .uri("lb://BOOKING-SERVICE"))  // Changed from http://localhost:8084
+                        .uri("lb://BOOKING-SERVICE"))
 
                 .build();
     }

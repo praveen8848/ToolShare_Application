@@ -47,6 +47,16 @@ public class ToolController {
         return ResponseEntity.ok(tools);
     }
 
+    // NEW: Get current user's tools (uses X-User-Id header)
+    @GetMapping("/my-tools")
+    public ResponseEntity<List<ToolResponse>> getMyTools(
+            @RequestHeader("X-User-Id") Long userId) {
+
+        logger.info("Fetching my tools for user: {}", userId);
+        List<ToolResponse> tools = toolService.getToolsByOwner(userId);
+        return ResponseEntity.ok(tools);
+    }
+
     @PostMapping
     public ResponseEntity<ToolResponse> createTool(
             @RequestHeader("X-User-Id") Long userId,
@@ -87,6 +97,7 @@ public class ToolController {
         toolService.updateToolStatus(id, status);
         return ResponseEntity.ok().build();
     }
+
     @PostMapping("/{id}/status")
     public ResponseEntity<Void> updateToolStatusPost(
             @PathVariable Long id,

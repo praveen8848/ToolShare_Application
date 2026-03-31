@@ -3,6 +3,8 @@ package com.toolsharing.booking_service.client;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @FeignClient(name = "tool-service", url = "${tool.service.url:http://localhost:8083}")
 public interface ToolServiceClient {
 
@@ -11,4 +13,6 @@ public interface ToolServiceClient {
 
     @PostMapping("/api/tools/{id}/status")
     void updateToolStatus(@PathVariable("id") Long id, @RequestParam("status") String status);
+    @GetMapping("/api/tools/user/{ownerId}")
+    List<ToolDto> getToolsByOwner(@PathVariable("ownerId") Long ownerId);
 }

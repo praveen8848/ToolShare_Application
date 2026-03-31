@@ -383,4 +383,33 @@ public class BookingService {
                 .completedAt(booking.getCompletedAt())
                 .build();
     }
+    // Add this method after getToolBookings() method
+
+    // Get pending bookings for owner (based on their tools)
+    public List<BookingResponse> getPendingBookingsForOwner(Long ownerId) {
+        // First, get all tools owned by this user from Tool Service
+        List<ToolDto> userTools;
+        try {
+            userTools = toolServiceClient.getToolsByOwner(ownerId);
+        } catch (Exception e) {
+            logger.error("Failed to fetch tools for owner: {}", ownerId, e);
+            return List.of();
+        }
+
+        if (userTools.isEmpty()) {
+            return List.of();
+        }
+
+        // Extract tool IDs
+        List<Long> toolIds = userTools.stream()
+                .map(ToolDto::getId)
+                .collect(Collectors.toList());
+
+        // Find pending bookings for these tools
+        List<Booking> pendingBookings = bookingRepository.findByItemIdInAndStatus(toolIds, BookingStatus.PENDING);
+
+        return pendingBookings.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
 }

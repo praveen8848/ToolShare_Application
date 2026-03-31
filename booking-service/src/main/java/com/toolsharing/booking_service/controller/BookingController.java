@@ -107,4 +107,14 @@ public class BookingController {
         BookingResponse response = bookingService.returnItem(bookingId, userId);
         return ResponseEntity.ok(response);
     }
+    // Get pending bookings for owner (based on their tools)
+    @GetMapping("/pending")
+    public ResponseEntity<List<BookingResponse>> getPendingBookings(
+            @RequestHeader("X-User-Id") Long ownerId) {
+
+        logger.info("Fetching pending bookings for owner: {}", ownerId);
+        List<BookingResponse> bookings = bookingService.getPendingBookingsForOwner(ownerId);
+        return ResponseEntity.ok(bookings);
+    }
+
 }
