@@ -29,6 +29,7 @@ const NavigationBar = () => {
                 <Nav.Link as={Link} to="/my-bookings">My Bookings</Nav.Link>
                 <Nav.Link as={Link} to="/owner-dashboard">Owner Dashboard</Nav.Link>
                 <Nav.Link as={Link} to="/my-tools">My Tools</Nav.Link>
+                <Nav.Link as={Link} to="/profile">Profile</Nav.Link>
               </Nav>
               <Nav>
                 <Nav.Link as={Link} to="/add-tool" className="me-2">

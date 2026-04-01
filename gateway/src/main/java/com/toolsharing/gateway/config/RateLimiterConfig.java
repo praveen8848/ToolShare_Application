@@ -35,6 +35,6 @@ public class RateLimiterConfig {
     @Bean
     public RedisRateLimiter redisRateLimiter() {
         // 10 requests per second, burst capacity 20
-        return new RedisRateLimiter(1, 2);
+        return new RedisRateLimiter(1000, 2000);
     }
 }

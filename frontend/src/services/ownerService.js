@@ -30,6 +30,21 @@ const ownerService = {
     const response = await api.patch(`/api/tools/${toolId}/status?status=${status}`);
     return response.data;
   },
+
+  // Get return requests (bookings with RETURN_REQUESTED status)
+    getReturnRequests: async () => {
+      const response = await api.get('/api/bookings/return-requests');
+      return response.data;
+    },
+
+    // Confirm return
+    confirmReturn: async (bookingId) => {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const response = await api.post(`/api/bookings/${bookingId}/confirm-return`, {}, {
+        headers: { 'X-User-Id': user?.id }
+      });
+      return response.data;
+    },
 };
 
 export default ownerService;

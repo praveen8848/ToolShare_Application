@@ -4,13 +4,18 @@ import { FaCalendarAlt, FaTools, FaUser, FaCheckCircle, FaTimesCircle, FaClock, 
 import { useBookings } from '../hooks/useBookings';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import QRCodeDisplay from '../components/bookings/QRCodeDisplay';
+import { toast } from 'react-toastify';
 
 const MyBookingsPage = () => {
-  const { bookings, loading, error, cancelBooking, returnItem } = useBookings();
+  // Get all functions from useBookings hook
+  const { bookings, loading, error, cancelBooking, requestReturn, confirmReturn, refreshBookings } = useBookings();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showQRCode, setShowQRCode] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [processing, setProcessing] = useState(null);
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -18,13 +23,15 @@ const MyBookingsPage = () => {
       'CONFIRMED': 'success',
       'REJECTED': 'danger',
       'CANCELLED': 'secondary',
-      'COMPLETED': 'info',
+      'RETURN_REQUESTED': 'info',
+      'COMPLETED': 'success',
     };
     const icons = {
       'PENDING': <FaClock className="me-1" />,
       'CONFIRMED': <FaCheckCircle className="me-1" />,
       'REJECTED': <FaTimesCircle className="me-1" />,
       'CANCELLED': <FaTimesCircle className="me-1" />,
+      'RETURN_REQUESTED': <FaClock className="me-1" />,
       'COMPLETED': <FaCheckCircle className="me-1" />,
     };
     return (
@@ -34,45 +41,128 @@ const MyBookingsPage = () => {
     );
   };
 
+  // Determine if current user is the borrower or owner
+  const isBorrower = (booking) => booking.borrowerId === user?.id;
+  const isOwner = (booking) => booking.ownerId === user?.id;
+
+  // Borrower requests return - using hook function
+  const handleRequestReturn = async (bookingId) => {
+    setProcessing(bookingId);
+    const success = await requestReturn(bookingId);
+    if (success) {
+      refreshBookings();
+    }
+    setProcessing(null);
+  };
+
+  // Owner confirms return - using hook function
+  const handleConfirmReturn = async (bookingId) => {
+    setProcessing(bookingId);
+    const success = await confirmReturn(bookingId);
+    if (success) {
+      refreshBookings();
+    }
+    setProcessing(null);
+  };
+
   const getActionButton = (booking) => {
-    if (booking.status === 'CONFIRMED') {
-      return (
-        <div className="d-flex gap-2">
+    // BORROWER ACTIONS
+    if (isBorrower(booking)) {
+      // Confirmed booking - can request return
+      if (booking.status === 'CONFIRMED') {
+        return (
+          <div className="d-flex gap-2">
+            <Button 
+              variant="outline-warning" 
+              size="sm"
+              className="flex-grow-1"
+              onClick={() => handleRequestReturn(booking.id)}
+              disabled={processing === booking.id}
+            >
+              {processing === booking.id ? (
+                <Spinner animation="border" size="sm" />
+              ) : (
+                <><FaQrcode className="me-1" /> Request Return</>
+              )}
+            </Button>
+            <Button 
+              variant="outline-primary" 
+              size="sm"
+              onClick={() => {
+                setSelectedBooking(booking);
+                setShowQRCode(true);
+              }}
+            >
+              <FaQrcode className="me-1" />
+              Show QR
+            </Button>
+          </div>
+        );
+      }
+      
+      // Return requested - waiting for owner
+      if (booking.status === 'RETURN_REQUESTED') {
+        return (
+          <Alert variant="info" className="mb-0 text-center py-2">
+            <FaClock className="me-1" />
+            Return requested. Waiting for owner confirmation.
+          </Alert>
+        );
+      }
+      
+      // Pending booking - can cancel
+      if (booking.status === 'PENDING') {
+        return (
           <Button 
-            variant="outline-success" 
+            variant="outline-danger" 
             size="sm"
-            onClick={() => navigate(`/return/${booking.id}`)}
-            className="flex-grow-1"
+            onClick={() => cancelBooking(booking.id)}
+            className="w-100"
+            disabled={processing === booking.id}
+          >
+            {processing === booking.id ? <Spinner animation="border" size="sm" /> : 'Cancel Request'}
+          </Button>
+        );
+      }
+    }
+    
+    // OWNER ACTIONS
+    if (isOwner(booking)) {
+      // Return requested by borrower - owner can confirm
+      if (booking.status === 'RETURN_REQUESTED') {
+        return (
+          <Button 
+            variant="success" 
+            size="sm"
+            className="w-100"
+            onClick={() => handleConfirmReturn(booking.id)}
+            disabled={processing === booking.id}
+          >
+            {processing === booking.id ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              <><FaCheckCircle className="me-1" /> Confirm Return</>
+            )}
+          </Button>
+        );
+      }
+      
+      // Confirmed booking - show QR for owner to scan (if needed)
+      if (booking.status === 'CONFIRMED') {
+        return (
+          <Button 
+            variant="outline-info" 
+            size="sm"
+            className="w-100"
+            onClick={() => navigate(`/owner-return/${booking.id}`)}
           >
             <FaQrcode className="me-1" />
-            Return
+            View Return Details
           </Button>
-          <Button 
-            variant="outline-primary" 
-            size="sm"
-            onClick={() => {
-              setSelectedBooking(booking);
-              setShowQRCode(true);
-            }}
-          >
-            <FaQrcode className="me-1" />
-            QR
-          </Button>
-        </div>
-      );
+        );
+      }
     }
-    if (booking.status === 'PENDING') {
-      return (
-        <Button 
-          variant="outline-danger" 
-          size="sm"
-          onClick={() => cancelBooking(booking.id)}
-          className="w-100"
-        >
-          Cancel Request
-        </Button>
-      );
-    }
+    
     return null;
   };
 
@@ -137,7 +227,9 @@ const MyBookingsPage = () => {
                     </div>
                     <div className="d-flex align-items-center mb-2">
                       <FaUser className="text-muted me-2" />
-                      <small>Owner: {booking.ownerName}</small>
+                      <small>
+                        {isBorrower(booking) ? `Owner: ${booking.ownerName}` : `Borrower: ${booking.borrowerName}`}
+                      </small>
                     </div>
                     <div className="d-flex align-items-center">
                       <FaTools className="text-muted me-2" />
@@ -169,7 +261,7 @@ const MyBookingsPage = () => {
         </Row>
       </Container>
 
-      {/* QR Code Display Modal */}
+      {/* QR Code Display Modal - For Borrower to show QR */}
       <QRCodeDisplay
         show={showQRCode}
         onHide={() => setShowQRCode(false)}

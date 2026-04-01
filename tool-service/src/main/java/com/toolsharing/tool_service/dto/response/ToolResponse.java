@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -23,6 +24,10 @@ public class ToolResponse {
     private String location;
     private Integer viewsCount;
     private Integer favoritesCount;
+
+    // NEW: Add images field for tool photos
+    private List<String> images;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -12,6 +12,7 @@ import OwnerDashboardPage from '../pages/OwnerDashboardPage';
 import MyToolsPage from '../pages/MyToolsPage';
 import AddToolPage from '../pages/AddToolPage';
 import EditToolPage from '../pages/EditToolPage';
+import ProfilePage from '../pages/ProfilePage';
 const AppRoutes = () => {
   return (
     <Routes>
@@ -90,6 +91,14 @@ const AppRoutes = () => {
       element={
         <ProtectedRoute>
           <EditToolPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/profile"
+      element={
+        <ProtectedRoute>
+          <ProfilePage />
         </ProtectedRoute>
       }
     />

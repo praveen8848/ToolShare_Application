@@ -49,16 +49,45 @@ export const useBookings = () => {
     }
   };
 
+  // NEW: Request return (borrower)
+  const requestReturn = async (id) => {
+    try {
+      await bookingService.requestReturn(id);
+      toast.success('Return request sent! Waiting for owner confirmation.');
+      fetchBookings();
+      return true;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to request return');
+      return false;
+    }
+  };
+
+  // NEW: Confirm return (owner)
+  const confirmReturn = async (id) => {
+    try {
+      await bookingService.confirmReturn(id);
+      toast.success('Return confirmed! Deposit will be refunded.');
+      fetchBookings();
+      return true;
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to confirm return');
+      return false;
+    }
+  };
+
   return {
     bookings,
     loading,
     error,
     cancelBooking,
     returnItem,
+    requestReturn,
+    confirmReturn,
     refreshBookings: fetchBookings,
   };
 };
 
+// Separate hook for single booking
 export const useBooking = (id) => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);

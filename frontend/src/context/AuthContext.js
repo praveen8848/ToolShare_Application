@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../config/axiosConfig';
+import userService from '../services/userService'; // Add this import
 
 const AuthContext = createContext();
 
@@ -33,9 +34,7 @@ export const AuthProvider = ({ children }) => {
         password,
       });
       
-      console.log('Register response:', response.data); // Debug
-      
-      // Backend returns user data directly
+      console.log('Register response:', response.data);
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Register error:', error.response?.data);
@@ -64,22 +63,18 @@ export const AuthProvider = ({ children }) => {
         password,
       });
       
-      console.log('Login response:', response.data); // Debug
+      console.log('Login response:', response.data);
       
-      // Check response structure
       if (!response.data) {
         throw new Error('No data in response');
       }
       
-      // Handle different response structures
       let token, userData;
       
       if (response.data.token && response.data.user) {
-        // Standard format
         token = response.data.token;
         userData = response.data.user;
       } else if (response.data.token && response.data.email) {
-        // Alternative format where user data is flat
         token = response.data.token;
         userData = {
           id: response.data.id,
@@ -91,11 +86,9 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid response format');
       }
       
-      // Store in localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       
-      // Update state
       setToken(token);
       setUser(userData);
       
@@ -133,10 +126,23 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Update user profile
+  // Update user profile locally
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
+  // NEW: Refresh user profile from backend
+  const refreshUserProfile = async () => {
+    try {
+      const profile = await userService.getProfile();
+      setUser(profile);
+      localStorage.setItem('user', JSON.stringify(profile));
+      return profile;
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+      return null;
+    }
   };
 
   const value = {
@@ -147,6 +153,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUser,
+    refreshUserProfile, // Add this to the value object
     isAuthenticated: !!user && !!token,
   };
 

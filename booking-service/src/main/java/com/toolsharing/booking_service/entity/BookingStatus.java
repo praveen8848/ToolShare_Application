@@ -5,5 +5,6 @@ public enum BookingStatus {
     CONFIRMED,  // Owner approved - dates locked
     REJECTED,   // Owner rejected
     CANCELLED,  // Borrower cancelled
+    RETURN_REQUESTED, // Borrower requested return
     COMPLETED   // Returned successfully
 }

@@ -56,6 +56,16 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
+    // Get a single booking by ID
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<BookingResponse> getBookingById(
+            @PathVariable Long bookingId) {
+
+        logger.info("Fetching booking by id: {}", bookingId);
+        BookingResponse response = bookingService.getBookingById(bookingId);
+        return ResponseEntity.ok(response);
+    }
+
     // Get bookings for a specific tool (owner view)
     @GetMapping("/tool/{toolId}")
     public ResponseEntity<List<BookingResponse>> getToolBookings(@PathVariable Long toolId) {
@@ -97,16 +107,17 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    // Return an item (borrower action - scan QR)
+    // Return item - OWNER scans borrower's QR code
     @PostMapping("/{bookingId}/return")
     public ResponseEntity<BookingResponse> returnItem(
             @PathVariable Long bookingId,
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestHeader("X-User-Id") Long userId) {  // This is the SCANNER (OWNER)
 
         logger.info("Returning item for booking: {} by user: {}", bookingId, userId);
         BookingResponse response = bookingService.returnItem(bookingId, userId);
         return ResponseEntity.ok(response);
     }
+
     // Get pending bookings for owner (based on their tools)
     @GetMapping("/pending")
     public ResponseEntity<List<BookingResponse>> getPendingBookings(
@@ -114,6 +125,36 @@ public class BookingController {
 
         logger.info("Fetching pending bookings for owner: {}", ownerId);
         List<BookingResponse> bookings = bookingService.getPendingBookingsForOwner(ownerId);
+        return ResponseEntity.ok(bookings);
+    }
+
+    // Borrower requests return
+    @PostMapping("/{bookingId}/request-return")
+    public ResponseEntity<BookingResponse> requestReturn(
+            @PathVariable Long bookingId,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        logger.info("Return requested for booking: {} by user: {}", bookingId, userId);
+        BookingResponse response = bookingService.requestReturn(bookingId, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    // Owner confirms return after scanning QR
+    @PostMapping("/{bookingId}/confirm-return")
+    public ResponseEntity<BookingResponse> confirmReturn(
+            @PathVariable Long bookingId,
+            @RequestHeader("X-User-Id") Long ownerId) {
+
+        logger.info("Return confirmed for booking: {} by owner: {}", bookingId, ownerId);
+        BookingResponse response = bookingService.confirmReturn(bookingId, ownerId);
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/return-requests")
+    public ResponseEntity<List<BookingResponse>> getReturnRequests(
+            @RequestHeader("X-User-Id") Long ownerId) {
+
+        logger.info("Fetching return requests for owner: {}", ownerId);
+        List<BookingResponse> bookings = bookingService.getReturnRequestsForOwner(ownerId);
         return ResponseEntity.ok(bookings);
     }
 

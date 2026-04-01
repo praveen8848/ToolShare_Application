@@ -3,6 +3,7 @@ package com.toolsharing.tool_service.dto.request;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 public class UpdateToolRequest {
@@ -28,4 +29,7 @@ public class UpdateToolRequest {
     private String location;
 
     private String status;
+
+    // NEW: Add images field for updating tool photos
+    private List<String> images;
 }

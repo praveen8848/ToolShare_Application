@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tools")
@@ -55,6 +57,12 @@ public class Tool {
     @Column(name = "favorites_count")
     private Integer favoritesCount = 0;
 
+    // NEW: Add images support
+    @ElementCollection
+    @CollectionTable(name = "tool_images", joinColumns = @JoinColumn(name = "tool_id"))
+    @Column(name = "image_url", length = 1000)
+    private List<String> images = new ArrayList<>();
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -68,6 +76,7 @@ public class Tool {
         if (viewsCount == null) viewsCount = 0;
         if (favoritesCount == null) favoritesCount = 0;
         if (status == null) status = ToolStatus.AVAILABLE;
+        if (images == null) images = new ArrayList<>();
     }
 
     @PreUpdate

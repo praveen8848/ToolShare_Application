@@ -247,34 +247,34 @@ public class BookingService {
         return convertToResponse(savedBooking);
     }
 
-    // Return item (complete booking)
-    @Transactional
-    public BookingResponse returnItem(Long bookingId, Long userId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
-
-        // Verify user is the borrower
-        if (!booking.getBorrowerId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only borrower can return items");
-        }
-
-        // Can only return confirmed bookings
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot return booking with status: " + booking.getStatus());
-        }
-
-        booking.setStatus(BookingStatus.COMPLETED);
-        booking.setCompletedAt(java.time.LocalDateTime.now());
-
-        Booking savedBooking = bookingRepository.save(booking);
-
-        // Update tool status back to AVAILABLE
-        toolServiceClient.updateToolStatus(booking.getItemId(), "AVAILABLE");
-
-        logger.info("Item returned for booking: {} by user: {}", bookingId, userId);
-
-        return convertToResponse(savedBooking);
-    }
+//    // Return item (complete booking)
+//    @Transactional
+//    public BookingResponse returnItem(Long bookingId, Long userId) {
+//        Booking booking = bookingRepository.findById(bookingId)
+//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+//
+//        // Verify user is the borrower
+//        if (!booking.getBorrowerId().equals(userId)) {
+//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only borrower can return items");
+//        }
+//
+//        // Can only return confirmed bookings
+//        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot return booking with status: " + booking.getStatus());
+//        }
+//
+//        booking.setStatus(BookingStatus.COMPLETED);
+//        booking.setCompletedAt(java.time.LocalDateTime.now());
+//
+//        Booking savedBooking = bookingRepository.save(booking);
+//
+//        // Update tool status back to AVAILABLE
+//        toolServiceClient.updateToolStatus(booking.getItemId(), "AVAILABLE");
+//
+//        logger.info("Item returned for booking: {} by user: {}", bookingId, userId);
+//
+//        return convertToResponse(savedBooking);
+//    }
 
     // Get bookings for a user (borrower)
     public List<BookingResponse> getUserBookings(Long userId) {
@@ -409,6 +409,121 @@ public class BookingService {
         List<Booking> pendingBookings = bookingRepository.findByItemIdInAndStatus(toolIds, BookingStatus.PENDING);
 
         return pendingBookings.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+    public BookingResponse getBookingById(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+        return convertToResponse(booking);
+    }
+    // Return item - OWNER scans QR code
+    @Transactional
+    public BookingResponse returnItem(Long bookingId, Long scannerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Verify the scanner is the OWNER of the tool
+        ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
+        if (!tool.getOwnerId().equals(scannerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the tool owner can confirm returns");
+        }
+
+        // Verify booking is CONFIRMED
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot return booking with status: " + booking.getStatus());
+        }
+
+        // Process return
+        booking.setStatus(BookingStatus.COMPLETED);
+        booking.setCompletedAt(java.time.LocalDateTime.now());
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Update tool status back to AVAILABLE
+        toolServiceClient.updateToolStatus(booking.getItemId(), "AVAILABLE");
+
+        logger.info("Item returned for booking: {} by owner: {}", bookingId, scannerId);
+
+        return convertToResponse(savedBooking);
+    }
+
+    // Borrower requests return
+    @Transactional
+    public BookingResponse requestReturn(Long bookingId, Long userId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Verify user is the borrower
+        if (!booking.getBorrowerId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only borrower can request return");
+        }
+
+        // Can only request return for CONFIRMED bookings
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot request return for booking with status: " + booking.getStatus());
+        }
+
+        // Update status to RETURN_REQUESTED
+        booking.setStatus(BookingStatus.RETURN_REQUESTED);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        logger.info("Return requested for booking: {} by borrower: {}", bookingId, userId);
+
+        return convertToResponse(savedBooking);
+    }
+
+    // Owner confirms return after scanning QR
+    @Transactional
+    public BookingResponse confirmReturn(Long bookingId, Long ownerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Verify user is the tool owner
+        ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
+        if (!tool.getOwnerId().equals(ownerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only tool owner can confirm returns");
+        }
+
+        // Must be in RETURN_REQUESTED status
+        if (booking.getStatus() != BookingStatus.RETURN_REQUESTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot confirm return. Current status: " + booking.getStatus());
+        }
+
+        // Process return
+        booking.setStatus(BookingStatus.COMPLETED);
+        booking.setCompletedAt(java.time.LocalDateTime.now());
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Update tool status back to AVAILABLE
+        toolServiceClient.updateToolStatus(booking.getItemId(), "AVAILABLE");
+
+        logger.info("Return confirmed for booking: {} by owner: {}", bookingId, ownerId);
+
+        return convertToResponse(savedBooking);
+    }
+
+    // Get return requests for owner (bookings with RETURN_REQUESTED status)
+    public List<BookingResponse> getReturnRequestsForOwner(Long ownerId) {
+        // Get all tools owned by this user
+        List<ToolDto> userTools = toolServiceClient.getToolsByOwner(ownerId);
+
+        if (userTools.isEmpty()) {
+            return List.of();
+        }
+
+        // Get tool IDs
+        List<Long> toolIds = userTools.stream()
+                .map(ToolDto::getId)
+                .collect(Collectors.toList());
+
+        // Find bookings with RETURN_REQUESTED status for these tools
+        List<Booking> returnRequests = bookingRepository.findByItemIdInAndStatus(toolIds, BookingStatus.RETURN_REQUESTED);
+
+        return returnRequests.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }

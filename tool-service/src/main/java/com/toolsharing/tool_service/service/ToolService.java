@@ -91,6 +91,11 @@ public class ToolService {
         tool.setDepositAmount(request.getDepositAmount());
         tool.setLocation(request.getLocation());
 
+        // NEW: Save images
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            tool.setImages(request.getImages());
+        }
+
         Tool savedTool = toolRepository.save(tool);
         logger.info("Tool created with id: {} by owner: {}", savedTool.getId(), ownerId);
 
@@ -139,6 +144,11 @@ public class ToolService {
             } catch (IllegalArgumentException e) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status");
             }
+        }
+
+        // NEW: Update images if provided
+        if (request.getImages() != null) {
+            tool.setImages(request.getImages());
         }
 
         Tool updatedTool = toolRepository.save(tool);
@@ -198,6 +208,7 @@ public class ToolService {
                 .location(tool.getLocation())
                 .viewsCount(tool.getViewsCount())
                 .favoritesCount(tool.getFavoritesCount())
+                .images(tool.getImages())  // NEW: Add images to response
                 .createdAt(tool.getCreatedAt())
                 .updatedAt(tool.getUpdatedAt())
                 .build();
