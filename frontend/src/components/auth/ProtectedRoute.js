@@ -5,7 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
+  // TEMPORARY: Set to true to bypass login while backend is down
+  // Set back to false when backend is restored
+  const BYPASS_AUTH = false;
+
+  if (loading && !BYPASS_AUTH) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
         <div className="spinner-border text-primary" role="status">
@@ -13,6 +17,11 @@ const ProtectedRoute = ({ children }) => {
         </div>
       </div>
     );
+  }
+
+  // If bypass is enabled, always allow access to all protected routes
+  if (BYPASS_AUTH) {
+    return children;
   }
 
   return isAuthenticated ? children : <Navigate to="/login" />;

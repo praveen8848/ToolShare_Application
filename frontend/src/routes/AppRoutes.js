@@ -12,7 +12,9 @@ import OwnerDashboardPage from '../pages/OwnerDashboardPage';
 import MyToolsPage from '../pages/MyToolsPage';
 import AddToolPage from '../pages/AddToolPage';
 import EditToolPage from '../pages/EditToolPage';
+import CategoryManagementPage from '../pages/CategoryManagementPage';
 import ProfilePage from '../pages/ProfilePage';
+import ToolViewPage from '../pages/ToolViewPage';
 const AppRoutes = () => {
   return (
     <Routes>
@@ -99,6 +101,22 @@ const AppRoutes = () => {
       element={
         <ProtectedRoute>
           <ProfilePage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/categories"
+      element={
+        <ProtectedRoute>
+          <CategoryManagementPage />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/tools/view/:id"
+      element={
+        <ProtectedRoute>
+          <ToolViewPage />
         </ProtectedRoute>
       }
     />

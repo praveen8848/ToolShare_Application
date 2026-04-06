@@ -60,7 +60,7 @@ public class Tool {
     // NEW: Add images support
     @ElementCollection
     @CollectionTable(name = "tool_images", joinColumns = @JoinColumn(name = "tool_id"))
-    @Column(name = "image_url", length = 1000)
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private List<String> images = new ArrayList<>();
 
     @Column(name = "created_at")

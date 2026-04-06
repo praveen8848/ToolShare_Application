@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -19,7 +18,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find bookings by item (for owner)
     List<Booking> findByItemIdOrderByCreatedAtDesc(Long itemId);
 
-    // Find pending bookings for an item
+    // Find bookings by item and status
     List<Booking> findByItemIdAndStatus(Long itemId, BookingStatus status);
 
     // Find confirmed bookings that overlap with given dates
@@ -39,8 +38,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find bookings by status
     List<Booking> findByStatus(BookingStatus status);
 
-    // Find bookings by item IDs (for owner's pending requests)
-    @Query("SELECT b FROM Booking b WHERE b.itemId IN :itemIds AND b.status = 'PENDING' ORDER BY b.createdAt DESC")
+    // FIXED: Use the status parameter, not hardcoded 'PENDING'
+    @Query("SELECT b FROM Booking b WHERE b.itemId IN :itemIds AND b.status = :status ORDER BY b.createdAt DESC")
     List<Booking> findByItemIdInAndStatus(@Param("itemIds") List<Long> itemIds, @Param("status") BookingStatus status);
 
     // Find pending bookings for a borrower

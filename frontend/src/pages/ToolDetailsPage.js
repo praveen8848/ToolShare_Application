@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Badge, Image, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Badge, Image, Alert, Modal } from 'react-bootstrap'; // Add Modal import
 import { FaStar, FaMapMarkerAlt, FaCalendarAlt, FaUser, FaArrowLeft, FaBookmark } from 'react-icons/fa';
 import { useTool } from '../hooks/useTools';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -11,6 +11,8 @@ const ToolDetailsPage = () => {
   const navigate = useNavigate();
   const { tool, loading, error } = useTool(id);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -67,12 +69,20 @@ const ToolDetailsPage = () => {
           <Col lg={6} className="mb-4">
             {tool.images && tool.images.length > 0 ? (
               <Card className="border-0 shadow-sm">
-                <Image
-                  src={tool.images[0]}
-                  fluid
-                  className="rounded"
-                  style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
-                />
+                <div 
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setSelectedImage(tool.images[0]);
+                    setShowImageModal(true);
+                  }}
+                >
+                  <Image
+                    src={tool.images[0]}
+                    fluid
+                    className="rounded"
+                    style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
+                  />
+                </div>
                 {tool.images.length > 1 && (
                   <div className="d-flex mt-2 gap-2">
                     {tool.images.slice(1, 4).map((img, idx) => (
@@ -81,6 +91,10 @@ const ToolDetailsPage = () => {
                         src={img}
                         thumbnail
                         style={{ width: '80px', height: '80px', objectFit: 'cover', cursor: 'pointer' }}
+                        onClick={() => {
+                          setSelectedImage(img);
+                          setShowImageModal(true);
+                        }}
                       />
                     ))}
                   </div>
@@ -147,6 +161,22 @@ const ToolDetailsPage = () => {
           </Col>
         </Row>
       </Container>
+
+      {/* Image Fullscreen Modal */}
+      <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered size="lg">
+        <Modal.Body className="p-0">
+          <Image 
+            src={selectedImage} 
+            fluid 
+            style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowImageModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Booking Modal */}
       <BookingModal

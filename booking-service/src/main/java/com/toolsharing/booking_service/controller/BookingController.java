@@ -157,5 +157,15 @@ public class BookingController {
         List<BookingResponse> bookings = bookingService.getReturnRequestsForOwner(ownerId);
         return ResponseEntity.ok(bookings);
     }
+    // Delete a booking (only for rejected/completed/cancelled)
+    @DeleteMapping("/{bookingId}")
+    public ResponseEntity<Void> deleteBooking(
+            @PathVariable Long bookingId,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        logger.info("Deleting booking: {} by user: {}", bookingId, userId);
+        bookingService.deleteBooking(bookingId, userId);
+        return ResponseEntity.noContent().build();
+    }
 
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { Row, Col } from 'react-bootstrap';
 import ToolCard from './ToolCard';
 
-const ToolGrid = ({ tools, loading }) => {
+const ToolGrid = ({ tools, loading, isOwnerView = false }) => {
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -25,7 +25,7 @@ const ToolGrid = ({ tools, loading }) => {
     <Row>
       {tools.map((tool) => (
         <Col key={tool.id} md={6} lg={4} xl={3} className="mb-4">
-          <ToolCard tool={tool} />
+          <ToolCard tool={tool} isOwnerView={isOwnerView} />
         </Col>
       ))}
     </Row>

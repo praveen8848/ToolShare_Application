@@ -37,3 +37,23 @@ code {
   transition: transform 0.3s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
+
+.hover-bg-light:hover {
+  background-color: #f8f9fa;
+}
+
+/* Category dropdown animation */
+.position-relative .position-absolute {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

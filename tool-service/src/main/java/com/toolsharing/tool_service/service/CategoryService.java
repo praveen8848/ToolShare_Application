@@ -6,6 +6,8 @@ import com.toolsharing.tool_service.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,21 +23,27 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
+    @Cacheable(value = "categories", unless = "#result == null || #result.isEmpty()")
     public List<CategoryResponse> getAllCategories() {
+        logger.info("Fetching all categories from DATABASE (cache miss)");
         List<Category> categories = categoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
         return categories.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "categories", key = "#id", unless = "#result == null")
     public CategoryResponse getCategoryById(Long id) {
+        logger.info("Fetching category by id {} from DATABASE (cache miss)", id);
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
         return convertToResponse(category);
     }
 
+    @CacheEvict(value = "categories", allEntries = true)
     @Transactional
     public CategoryResponse createCategory(Category category) {
+        logger.info("Creating new category, clearing categories cache");
         if (categoryRepository.existsByName(category.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category name already exists");
         }
@@ -45,8 +53,10 @@ public class CategoryService {
         return convertToResponse(savedCategory);
     }
 
+    @CacheEvict(value = "categories", allEntries = true)
     @Transactional
     public CategoryResponse updateCategory(Long id, Category categoryDetails) {
+        logger.info("Updating category {}, clearing categories cache", id);
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
@@ -78,8 +88,10 @@ public class CategoryService {
         return convertToResponse(updatedCategory);
     }
 
+    @CacheEvict(value = "categories", allEntries = true)
     @Transactional
     public void deleteCategory(Long id) {
+        logger.info("Deleting category {}, clearing categories cache", id);
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 

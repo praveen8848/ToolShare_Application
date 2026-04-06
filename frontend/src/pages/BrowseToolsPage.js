@@ -23,7 +23,7 @@ const BrowseToolsPage = () => {
         onReset={resetFilters}
       />
       
-      <ToolGrid tools={tools} loading={loading} />
+      <ToolGrid tools={tools} loading={loading} isOwnerView={false} />
     </Container>
   );
 };

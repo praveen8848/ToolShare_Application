@@ -4,8 +4,10 @@ import { FaCheckCircle, FaTimesCircle, FaClock, FaTools, FaCalendarAlt, FaUser, 
 import ownerService from '../services/ownerService';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom'; 
 
 const OwnerDashboardPage = () => {
+  const navigate = useNavigate(); 
   const [pendingBookings, setPendingBookings] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]);
   const [myTools, setMyTools] = useState([]);
@@ -265,7 +267,7 @@ const OwnerDashboardPage = () => {
           )}
         </Tab>
 
-        <Tab eventKey="tools" title={`My Tools (${myTools.length})`}>
+       <Tab eventKey="tools" title={`My Tools (${myTools.length})`}>
           {myTools.length === 0 ? (
             <Card className="text-center py-5">
               <Card.Body>
@@ -286,21 +288,35 @@ const OwnerDashboardPage = () => {
                       <Card.Img
                         variant="top"
                         src={tool.images[0]}
-                        style={{ height: '150px', objectFit: 'cover' }}
+                        style={{ height: '150px', objectFit: 'cover', cursor: 'pointer' }}
+                        onClick={() => navigate(`/tools/view/${tool.id}`)}
                       />
                     )}
                     <Card.Body>
-                      <h5>{tool.name}</h5>
-                      <p className="text-muted small">{tool.description?.substring(0, 100)}...</p>
-                      <div className="d-flex justify-content-between">
-                        <span className="text-primary fw-bold">{formatCurrency(tool.dailyRate)}/day</span>
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <h5 
+                          className="mb-0 text-primary" 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => navigate(`/tools/view/${tool.id}`)}
+                        >
+                          {tool.name}
+                        </h5>
                         <Badge bg={tool.status === 'AVAILABLE' ? 'success' : 'warning'}>
                           {tool.status}
                         </Badge>
                       </div>
+                      <p className="text-muted small">{tool.description?.substring(0, 80)}...</p>
+                      <div className="d-flex justify-content-between">
+                        <span className="text-primary fw-bold">{formatCurrency(tool.dailyRate)}/day</span>
+                      </div>
                     </Card.Body>
                     <Card.Footer className="bg-white">
-                      <Button variant="outline-primary" size="sm" className="w-100">
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        className="w-100"
+                        onClick={() => navigate(`/tools/view/${tool.id}`)}
+                      >
                         Manage Tool
                       </Button>
                     </Card.Footer>
@@ -309,7 +325,7 @@ const OwnerDashboardPage = () => {
               ))}
             </Row>
           )}
-        </Tab>
+          </Tab>
       </Tabs>
     </Container>
   );

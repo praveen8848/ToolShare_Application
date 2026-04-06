@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Card, Row, Col, Image, Alert, Spinner } from 'react-bootstrap';
+import { Container, Form, Button, Card, Row, Col, Image, Alert, Spinner, Modal, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { FaUpload, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaUpload, FaTrash, FaPlus, FaSearch, FaFolderPlus, FaRupeeSign } from 'react-icons/fa';
 import toolService from '../services/toolService';
+import categoryService from '../services/categoryService';
 import { toast } from 'react-toastify';
 
 const AddToolPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    description: '',
+    icon: ''
+  });
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -31,9 +40,58 @@ const AddToolPage = () => {
   const loadCategories = async () => {
     try {
       const data = await toolService.getCategories();
-      setCategories(data);
+      console.log('Loaded categories:', data); // Debug log
+      setCategories(data || []);
     } catch (error) {
+      console.error('Failed to load categories:', error);
       toast.error('Failed to load categories');
+      setCategories([]);
+    }
+  };
+
+  // Get filtered categories for display
+  const getFilteredCategories = () => {
+    if (!categorySearch.trim()) {
+      return categories;
+    }
+    return categories.filter(cat => 
+      cat.name && cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+    );
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategory.name.trim()) {
+      toast.error('Category name is required');
+      return;
+    }
+    if (!newCategory.description.trim()) {
+      toast.error('Category description is required');
+      return;
+    }
+
+    setCreatingCategory(true);
+    try {
+      const created = await categoryService.createCategory({
+        name: newCategory.name,
+        description: newCategory.description,
+        icon: newCategory.icon || '',
+        displayOrder: categories.length
+      });
+      toast.success('Category created successfully!');
+      setShowCategoryModal(false);
+      setNewCategory({ name: '', description: '', icon: '' });
+      setCategorySearch('');
+      // Refresh categories
+      await loadCategories();
+      // Auto-select the newly created category
+      if (created && created.id) {
+        setFormData(prev => ({ ...prev, categoryId: created.id }));
+      }
+    } catch (error) {
+      console.error('Create category error:', error);
+      toast.error(error.response?.data?.message || 'Failed to create category');
+    } finally {
+      setCreatingCategory(false);
     }
   };
 
@@ -46,8 +104,8 @@ const AddToolPage = () => {
       reader.onloadend = () => {
         newImages.push(reader.result);
         newPreviews.push(reader.result);
-        setImages(newImages);
-        setImagePreviews(newPreviews);
+        setImages([...newImages]);
+        setImagePreviews([...newPreviews]);
       };
       reader.readAsDataURL(file);
     });
@@ -60,14 +118,17 @@ const AddToolPage = () => {
   });
 
   const removeImage = (index) => {
-    setImages(images.filter((_, i) => i !== index));
-    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+    const newImages = [...images];
+    const newPreviews = [...imagePreviews];
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    setImages(newImages);
+    setImagePreviews(newPreviews);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -75,10 +136,10 @@ const AddToolPage = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Tool name is required';
+    if (!formData.name?.trim()) newErrors.name = 'Tool name is required';
     if (!formData.categoryId) newErrors.categoryId = 'Category is required';
-    if (!formData.dailyRate || parseFloat(formData.dailyRate) <= 0) {
-      newErrors.dailyRate = 'Valid daily rate is required';
+    if (formData.dailyRate === '' || parseFloat(formData.dailyRate) < 0) {
+      newErrors.dailyRate = 'Valid daily rate is required (can be 0 for free)';
     }
     if (images.length === 0) newErrors.images = 'At least one image is required';
     return newErrors;
@@ -97,7 +158,7 @@ const AddToolPage = () => {
     try {
       await toolService.createTool({
         ...formData,
-        dailyRate: parseFloat(formData.dailyRate),
+        dailyRate: parseFloat(formData.dailyRate) || 0,
         weeklyRate: formData.weeklyRate ? parseFloat(formData.weeklyRate) : null,
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : null,
         depositAmount: formData.depositAmount ? parseFloat(formData.depositAmount) : null,
@@ -106,11 +167,14 @@ const AddToolPage = () => {
       toast.success('Tool listed successfully!');
       navigate('/my-tools');
     } catch (error) {
+      console.error('Create tool error:', error);
       toast.error(error.response?.data?.message || 'Failed to list tool');
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredCategories = getFilteredCategories();
 
   return (
     <Container className="py-4">
@@ -138,17 +202,50 @@ const AddToolPage = () => {
 
                 <Form.Group className="mb-3">
                   <Form.Label>Category *</Form.Label>
-                  <Form.Select
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleChange}
-                    isInvalid={!!errors.categoryId}
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </Form.Select>
+                  <InputGroup>
+                    <Form.Select
+                      name="categoryId"
+                      value={formData.categoryId || ''}
+                      onChange={handleChange}
+                      isInvalid={!!errors.categoryId}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">Select a category</option>
+                      {filteredCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Button 
+                      variant="outline-primary" 
+                      onClick={() => setShowCategoryModal(true)}
+                      title="Create new category"
+                    >
+                      <FaFolderPlus />
+                    </Button>
+                  </InputGroup>
+                  <div className="mt-2">
+                    <InputGroup size="sm">
+                      <InputGroup.Text><FaSearch size={12} /></InputGroup.Text>
+                      <Form.Control
+                        type="text"
+                        placeholder="Search categories..."
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
+                        style={{ fontSize: '14px' }}
+                      />
+                    </InputGroup>
+                  </div>
+                  <Form.Text className="text-muted">
+                    Can't find a category? Click the + button to create one
+                  </Form.Text>
                   <Form.Control.Feedback type="invalid">
                     {errors.categoryId}
                   </Form.Control.Feedback>
@@ -169,16 +266,23 @@ const AddToolPage = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Daily Rate *</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="dailyRate"
-                        value={formData.dailyRate}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                        isInvalid={!!errors.dailyRate}
-                      />
+                      <Form.Label>Daily Rate (₹) *</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="dailyRate"
+                          value={formData.dailyRate}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                          isInvalid={!!errors.dailyRate}
+                        />
+                      </InputGroup>
+                      <Form.Text className="text-muted">
+                        Set to 0 for free tools
+                      </Form.Text>
                       <Form.Control.Feedback type="invalid">
                         {errors.dailyRate}
                       </Form.Control.Feedback>
@@ -186,15 +290,19 @@ const AddToolPage = () => {
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Weekly Rate (Optional)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="weeklyRate"
-                        value={formData.weeklyRate}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                      />
+                      <Form.Label>Weekly Rate (₹) (Optional)</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="weeklyRate"
+                          value={formData.weeklyRate}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                        />
+                      </InputGroup>
                     </Form.Group>
                   </Col>
                 </Row>
@@ -202,28 +310,36 @@ const AddToolPage = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Monthly Rate (Optional)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="monthlyRate"
-                        value={formData.monthlyRate}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                      />
+                      <Form.Label>Monthly Rate (₹) (Optional)</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="monthlyRate"
+                          value={formData.monthlyRate}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                        />
+                      </InputGroup>
                     </Form.Group>
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Deposit Amount (Optional)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="depositAmount"
-                        value={formData.depositAmount}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                      />
+                      <Form.Label>Deposit Amount (₹) (Optional)</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="depositAmount"
+                          value={formData.depositAmount}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                        />
+                      </InputGroup>
                     </Form.Group>
                   </Col>
                 </Row>
@@ -258,6 +374,11 @@ const AddToolPage = () => {
                     </p>
                     <small className="text-muted">Up to 5 images (JPG, PNG)</small>
                   </div>
+                  <Alert variant="info" className="mt-2 mb-0 py-2">
+                    <small>
+                      <strong>Note:</strong> The first image you upload will be used as the main preview image for your tool listing.
+                    </small>
+                  </Alert>
                   {errors.images && (
                     <div className="text-danger small mt-1">{errors.images}</div>
                   )}
@@ -273,8 +394,18 @@ const AddToolPage = () => {
                             <Image
                               src={preview}
                               thumbnail
-                              style={{ height: '100px', width: '100%', objectFit: 'cover' }}
+                              style={{ 
+                                height: '100px', 
+                                width: '100%', 
+                                objectFit: 'cover',
+                                border: index === 0 ? '2px solid #0d6efd' : 'none'
+                              }}
                             />
+                            {index === 0 && (
+                              <div className="position-absolute top-0 start-0 bg-primary text-white px-1 small" style={{ fontSize: '10px' }}>
+                                Main
+                              </div>
+                            )}
                             <Button
                               variant="danger"
                               size="sm"
@@ -288,6 +419,9 @@ const AddToolPage = () => {
                         </Col>
                       ))}
                     </Row>
+                    <Form.Text className="text-muted">
+                      The image with blue border will appear as the main preview
+                    </Form.Text>
                   </div>
                 )}
 
@@ -313,6 +447,67 @@ const AddToolPage = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Create Category Modal */}
+      <Modal show={showCategoryModal} onHide={() => setShowCategoryModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaFolderPlus className="me-2" />
+            Create New Category
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Category Name *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g., Power Tools"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                autoFocus
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Description *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                placeholder="Brief description of this category"
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Icon (Emoji)</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g., 🔧, 🛠️, ⚡"
+                value={newCategory.icon}
+                onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+              />
+              <Form.Text className="text-muted">
+                Add an emoji to make your category stand out
+              </Form.Text>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCategoryModal(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleCreateCategory}
+            disabled={creatingCategory || !newCategory.name.trim() || !newCategory.description.trim()}
+          >
+            {creatingCategory ? <Spinner animation="border" size="sm" /> : 'Create Category'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

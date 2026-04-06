@@ -1,12 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Image } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import userService from '../services/userService';
 import { toast } from 'react-toastify';
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaInfoCircle, FaCamera, FaSave } from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaInfoCircle, FaSave, FaUser } from 'react-icons/fa'; // Added FaUser
+
+// Avatar Component with beautiful design
+const UserAvatar = ({ name, size = 150 }) => {
+  // Get initials from name
+  const initials = name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  
+  // Generate a consistent color based on name
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', 
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+    '#FF8C42', '#6C63FF', '#FF6B9D', '#00C9A7', '#FFD166'
+  ];
+  const colorIndex = name.length % colors.length;
+  const backgroundColor = colors[colorIndex];
+  
+  return (
+    <div
+      className="rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: backgroundColor,
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        cursor: 'default'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'scale(1.05)';
+        e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+      }}
+    >
+      <span style={{ 
+        fontSize: `${size * 0.4}px`, 
+        color: 'white', 
+        fontWeight: 'bold',
+        textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+      }}>
+        {initials || 'U'}
+      </span>
+    </div>
+  );
+};
 
 const ProfilePage = () => {
-  const { user, refreshUserProfile } = useAuth(); // Get refreshUserProfile
+  const { user, refreshUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -17,8 +67,6 @@ const ProfilePage = () => {
     bio: '',
     preferences: ''
   });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     loadProfile();
@@ -36,9 +84,6 @@ const ProfilePage = () => {
         bio: data.bio || '',
         preferences: data.preferences || ''
       });
-      if (data.profileImageUrl) {
-        setPreviewUrl(data.profileImageUrl);
-      }
     } catch (error) {
       toast.error('Failed to load profile');
     } finally {
@@ -51,45 +96,14 @@ const ProfilePage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size must be less than 5MB');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        toast.error('Only image files are allowed');
-        return;
-      }
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const handleUploadPicture = async () => {
-    if (!selectedFile) return;
-    
-    try {
-      const result = await userService.uploadProfilePicture(selectedFile);
-      toast.success('Profile picture updated!');
-      setPreviewUrl(result.imageUrl);
-      setSelectedFile(null);
-      await refreshUserProfile(); // Refresh user from backend
-      loadProfile(); // Reload profile data
-    } catch (error) {
-      toast.error('Failed to upload picture');
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
       const updatedProfile = await userService.updateProfile(formData);
-      await refreshUserProfile(); // Refresh user from backend
+      await refreshUserProfile();
       toast.success('Profile updated successfully!');
-      loadProfile(); // Reload profile data
+      await loadProfile();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
@@ -112,56 +126,48 @@ const ProfilePage = () => {
       
       <Row>
         <Col lg={4} className="mb-4">
-          <Card className="shadow-sm text-center">
+          <Card className="shadow-sm text-center border-0">
             <Card.Body>
-              <div className="position-relative d-inline-block mb-3">
-                {previewUrl ? (
-                  <Image
-                    src={previewUrl}
-                    roundedCircle
-                    style={{ width: '150px', height: '150px', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div
-                    className="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto"
-                    style={{ width: '150px', height: '150px' }}
-                  >
-                    <FaUser size={60} className="text-muted" />
-                  </div>
-                )}
-                <label
-                  htmlFor="profile-picture-input"
-                  className="position-absolute bottom-0 end-0 bg-primary rounded-circle p-2"
-                  style={{ cursor: 'pointer' }}
-                >
-                  <FaCamera size={16} color="white" />
-                </label>
-                <input
-                  id="profile-picture-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-              </div>
+              {/* Avatar Section */}
+              <UserAvatar 
+                name={formData.name || profile?.name || 'User'} 
+                size={150} 
+              />
               
-              {selectedFile && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="mt-2"
-                  onClick={handleUploadPicture}
-                >
-                  Upload Picture
-                </Button>
-              )}
-              
-              <hr />
+              <hr className="my-4" />
               
               <div className="text-start">
-                <p><FaEnvelope className="me-2 text-muted" /> {profile?.email}</p>
-                <p><FaUser className="me-2 text-muted" /> Member since {new Date(profile?.createdAt).toLocaleDateString()}</p>
-                <p><FaInfoCircle className="me-2 text-muted" /> Trust Score: {profile?.trustScore || 0}%</p>
+                <div className="mb-3">
+                  <FaEnvelope className="me-2 text-muted" />
+                  <strong>Email:</strong>
+                  <p className="text-muted mb-0 mt-1">{profile?.email}</p>
+                </div>
+                
+                <div className="mb-3">
+                  <FaUser className="me-2 text-muted" />
+                  <strong>Member Since:</strong>
+                  <p className="text-muted mb-0 mt-1">
+                    {new Date(profile?.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                
+                <div className="mb-3">
+                  <FaInfoCircle className="me-2 text-muted" />
+                  <strong>Trust Score:</strong>
+                  <div className="mt-1">
+                    <div className="progress" style={{ height: '8px' }}>
+                      <div 
+                        className="progress-bar bg-success" 
+                        style={{ width: `${profile?.trustScore || 0}%` }}
+                      />
+                    </div>
+                    <small className="text-muted">{profile?.trustScore || 0}% - Good standing</small>
+                  </div>
+                </div>
               </div>
             </Card.Body>
           </Card>
@@ -183,6 +189,9 @@ const ProfilePage = () => {
                     onChange={handleChange}
                     placeholder="Enter your full name"
                   />
+                  <Form.Text className="text-muted">
+                    This will be displayed on your profile and to other users
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
@@ -205,6 +214,9 @@ const ProfilePage = () => {
                     onChange={handleChange}
                     placeholder="Enter your address"
                   />
+                  <Form.Text className="text-muted">
+                    Full address will be shared after booking confirmation
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
@@ -215,8 +227,11 @@ const ProfilePage = () => {
                     name="bio"
                     value={formData.bio}
                     onChange={handleChange}
-                    placeholder="Tell others about yourself..."
+                    placeholder="Tell others about yourself, your interests, and what tools you love to share..."
                   />
+                  <Form.Text className="text-muted">
+                    Share a little about yourself to build trust with the community
+                  </Form.Text>
                 </Form.Group>
 
                 <Alert variant="info" className="mt-3">

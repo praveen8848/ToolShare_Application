@@ -11,6 +11,9 @@ import com.toolsharing.tool_service.repository.ToolRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +51,9 @@ public class ToolService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "tools", key = "#id", unless = "#result == null")
     public ToolResponse getToolById(Long id) {
+        logger.info("Fetching tool by id {} from DATABASE (cache miss)", id);
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found with id: " + id));
 
@@ -58,15 +63,24 @@ public class ToolService {
         return convertToResponse(tool);
     }
 
+    @Cacheable(value = "userTools", key = "#ownerId", unless = "#result == null || #result.isEmpty()")
     public List<ToolResponse> getToolsByOwner(Long ownerId) {
+        logger.info("Fetching tools for owner {} from DATABASE (cache miss)", ownerId);
         List<Tool> tools = toolRepository.findByOwnerId(ownerId);
         return tools.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "tools", key = "#result.id"),
+            @CacheEvict(value = "userTools", key = "#ownerId"),
+            @CacheEvict(value = "searchResults", allEntries = true)
+    })
     @Transactional
     public ToolResponse createTool(Long ownerId, CreateToolRequest request) {
+        logger.info("Creating tool for user {}, clearing related caches", ownerId);
+
         // Validate owner exists in User Service
         try {
             userServiceClient.getUserById(ownerId);
@@ -102,8 +116,15 @@ public class ToolService {
         return convertToResponse(savedTool);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "tools", key = "#id"),
+            @CacheEvict(value = "userTools", key = "#userId"),
+            @CacheEvict(value = "searchResults", allEntries = true)
+    })
     @Transactional
     public ToolResponse updateTool(Long id, Long userId, UpdateToolRequest request) {
+        logger.info("Updating tool {}, clearing related caches", id);
+
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found"));
 
@@ -157,8 +178,15 @@ public class ToolService {
         return convertToResponse(updatedTool);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "tools", key = "#id"),
+            @CacheEvict(value = "userTools", key = "#userId"),
+            @CacheEvict(value = "searchResults", allEntries = true)
+    })
     @Transactional
     public void deleteTool(Long id, Long userId) {
+        logger.info("Deleting tool {}, clearing related caches", id);
+
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found"));
 
@@ -171,8 +199,11 @@ public class ToolService {
         logger.info("Tool deleted with id: {} by owner: {}", id, userId);
     }
 
+    @CacheEvict(value = "tools", key = "#id")
     @Transactional
     public void updateToolStatus(Long id, String status) {
+        logger.info("Updating tool status for {}, clearing tool cache", id);
+
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found"));
 

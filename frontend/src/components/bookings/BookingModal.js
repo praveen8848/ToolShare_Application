@@ -12,6 +12,7 @@ const BookingModal = ({ show, onHide, tool }) => {
   const [loading, setLoading] = useState(false);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Reset dates when modal closes
   const handleClose = () => {
@@ -19,7 +20,17 @@ const BookingModal = ({ show, onHide, tool }) => {
     setEndDate(null);
     setAvailability(null);
     setBookingSuccess(false);
+    setValidationErrors({});
     onHide();
+  };
+
+  // Helper function to format date for API
+  const formatDateForAPI = (date) => {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Check availability when dates change
@@ -30,8 +41,8 @@ const BookingModal = ({ show, onHide, tool }) => {
         try {
           const result = await bookingService.checkAvailability(
             tool.id,
-            startDate.toISOString().split('T')[0],
-            endDate.toISOString().split('T')[0]
+            formatDateForAPI(startDate),
+            formatDateForAPI(endDate)
           );
           setAvailability(result);
         } catch (err) {
@@ -66,17 +77,31 @@ const BookingModal = ({ show, onHide, tool }) => {
     }
 
     setLoading(true);
+    setValidationErrors({});
+    
     try {
       await bookingService.createBooking({
         itemId: tool.id,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
+        startDate: formatDateForAPI(startDate),
+        endDate: formatDateForAPI(endDate),
         notes: '',
       });
       setBookingSuccess(true);
       toast.success('Booking request sent! Waiting for owner approval.');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create booking');
+      const errorData = err.response?.data;
+      
+      if (errorData?.errors) {
+        setValidationErrors(errorData.errors);
+        const errorMessages = Object.values(errorData.errors).join('\n');
+        toast.error(errorMessages);
+      } else if (errorData?.message) {
+        toast.error(errorData.message);
+      } else {
+        toast.error('Failed to create booking');
+      }
+      
+      console.error('Booking error:', errorData);
     } finally {
       setLoading(false);
     }
@@ -103,6 +128,19 @@ const BookingModal = ({ show, onHide, tool }) => {
           </Alert>
         ) : (
           <>
+            {Object.keys(validationErrors).length > 0 && (
+              <Alert variant="danger">
+                <strong>Please fix the following errors:</strong>
+                <ul className="mb-0 mt-2">
+                  {Object.entries(validationErrors).map(([field, message]) => (
+                    <li key={field}>
+                      <strong>{field}:</strong> {message}
+                    </li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
+
             <div className="mb-3">
               <h6>Tool Details</h6>
               <p className="text-muted">
@@ -122,7 +160,7 @@ const BookingModal = ({ show, onHide, tool }) => {
                   endDate={endDate}
                   minDate={new Date()}
                   placeholderText="Start Date"
-                  className="form-control"
+                  className={`form-control ${validationErrors.startDate ? 'is-invalid' : ''}`}
                   dateFormat="MMM dd, yyyy"
                 />
                 <DatePicker
@@ -133,11 +171,21 @@ const BookingModal = ({ show, onHide, tool }) => {
                   endDate={endDate}
                   minDate={startDate || new Date()}
                   placeholderText="End Date"
-                  className="form-control"
+                  className={`form-control ${validationErrors.endDate ? 'is-invalid' : ''}`}
                   dateFormat="MMM dd, yyyy"
                   disabled={!startDate}
                 />
               </div>
+              {validationErrors.startDate && (
+                <Form.Text className="text-danger">
+                  {validationErrors.startDate}
+                </Form.Text>
+              )}
+              {validationErrors.endDate && (
+                <Form.Text className="text-danger">
+                  {validationErrors.endDate}
+                </Form.Text>
+              )}
             </Form.Group>
 
             {checkingAvailability && (

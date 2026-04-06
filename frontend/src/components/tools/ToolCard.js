@@ -1,11 +1,12 @@
 import React from 'react';
 import { Card, Badge, Button } from 'react-bootstrap';
 import { FaStar, FaMapMarkerAlt, FaCalendarAlt } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
 
-const ToolCard = ({ tool }) => {
+const ToolCard = ({ tool, isOwnerView = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -13,7 +14,12 @@ const ToolCard = ({ tool }) => {
       'BORROWED': 'warning',
       'MAINTENANCE': 'danger',
     };
-    return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
+    const labels = {
+      'AVAILABLE': 'Available',
+      'BORROWED': 'Borrowed',
+      'MAINTENANCE': 'Under Maintenance',
+    };
+    return <Badge bg={variants[status] || 'secondary'}>{labels[status] || status}</Badge>;
   };
 
   const getRatingStars = (rating) => {
@@ -24,7 +30,13 @@ const ToolCard = ({ tool }) => {
   };
 
   const handleViewDetails = () => {
-    navigate(`/tools/${tool.id}`);
+    // If it's owner view (from My Tools page), go to tool view page
+    if (isOwnerView || location.pathname === '/my-tools') {
+      navigate(`/tools/view/${tool.id}`);
+    } else {
+      // Default: go to browse tool details page
+      navigate(`/tools/${tool.id}`);
+    }
   };
 
   return (
@@ -66,7 +78,10 @@ const ToolCard = ({ tool }) => {
         
         <div className="mt-2">
           <div className="d-flex justify-content-between align-items-center">
-            <span className="h5 text-primary mb-0">{formatCurrency(tool.dailyRate)}<small className="text-muted">/day</small></span>
+            <span className="h5 text-primary mb-0">
+              {formatCurrency(tool.dailyRate)}
+              <small className="text-muted">/day</small>
+            </span>
             <Button variant="outline-primary" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(); }}>
               View Details
             </Button>

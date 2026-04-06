@@ -16,6 +16,9 @@ import com.toolsharing.booking_service.util.QRCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,8 +93,14 @@ public class BookingService {
     }
 
     // Create booking request (PENDING status)
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#borrowerId"),
+            @CacheEvict(value = "availability", key = "#request.getItemId() + '_' + #request.getStartDate() + '_' + #request.getEndDate()")
+    })
     @Transactional
     public BookingResponse createBooking(Long borrowerId, CreateBookingRequest request) {
+        logger.info("Creating booking for user {}, clearing related caches", borrowerId);
+
         // Validate dates
         if (request.getStartDate().isAfter(request.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start date must be before end date");
@@ -145,8 +154,15 @@ public class BookingService {
     }
 
     // Owner approves booking
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#booking.getBorrowerId()"),
+            @CacheEvict(value = "booking", key = "#bookingId"),
+            @CacheEvict(value = "availability", allEntries = true)
+    })
     @Transactional
     public BookingResponse approveBooking(Long bookingId, Long ownerId) {
+        logger.info("Approving booking {}, clearing related caches", bookingId);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
@@ -190,8 +206,14 @@ public class BookingService {
     }
 
     // Owner rejects booking
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#booking.getBorrowerId()"),
+            @CacheEvict(value = "booking", key = "#bookingId")
+    })
     @Transactional
     public BookingResponse rejectBooking(Long bookingId, Long ownerId) {
+        logger.info("Rejecting booking {}, clearing related caches", bookingId);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
@@ -217,8 +239,14 @@ public class BookingService {
     }
 
     // Borrower cancels booking (only if pending or confirmed)
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#userId"),
+            @CacheEvict(value = "booking", key = "#bookingId")
+    })
     @Transactional
     public BookingResponse cancelBooking(Long bookingId, Long userId) {
+        logger.info("Cancelling booking {}, clearing related caches", bookingId);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
@@ -247,37 +275,10 @@ public class BookingService {
         return convertToResponse(savedBooking);
     }
 
-//    // Return item (complete booking)
-//    @Transactional
-//    public BookingResponse returnItem(Long bookingId, Long userId) {
-//        Booking booking = bookingRepository.findById(bookingId)
-//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
-//
-//        // Verify user is the borrower
-//        if (!booking.getBorrowerId().equals(userId)) {
-//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only borrower can return items");
-//        }
-//
-//        // Can only return confirmed bookings
-//        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot return booking with status: " + booking.getStatus());
-//        }
-//
-//        booking.setStatus(BookingStatus.COMPLETED);
-//        booking.setCompletedAt(java.time.LocalDateTime.now());
-//
-//        Booking savedBooking = bookingRepository.save(booking);
-//
-//        // Update tool status back to AVAILABLE
-//        toolServiceClient.updateToolStatus(booking.getItemId(), "AVAILABLE");
-//
-//        logger.info("Item returned for booking: {} by user: {}", bookingId, userId);
-//
-//        return convertToResponse(savedBooking);
-//    }
-
     // Get bookings for a user (borrower)
+    @Cacheable(value = "userBookings", key = "#userId", unless = "#result == null || #result.isEmpty()")
     public List<BookingResponse> getUserBookings(Long userId) {
+        logger.info("Fetching bookings for user {} from DATABASE (cache miss)", userId);
         List<Booking> bookings = bookingRepository.findByBorrowerIdOrderByCreatedAtDesc(userId);
         return bookings.stream()
                 .map(this::convertToResponse)
@@ -285,7 +286,9 @@ public class BookingService {
     }
 
     // Get bookings for a tool (owner's view)
+    @Cacheable(value = "toolBookings", key = "#toolId", unless = "#result == null || #result.isEmpty()")
     public List<BookingResponse> getToolBookings(Long toolId) {
+        logger.info("Fetching bookings for tool {} from DATABASE (cache miss)", toolId);
         List<Booking> bookings = bookingRepository.findByItemIdOrderByCreatedAtDesc(toolId);
         return bookings.stream()
                 .map(this::convertToResponse)
@@ -295,7 +298,6 @@ public class BookingService {
     // Get pending requests for owner (based on their tools)
     public List<BookingResponse> getOwnerPendingRequests(Long ownerId) {
         List<Booking> pendingBookings = bookingRepository.findByStatus(BookingStatus.PENDING);
-
         return pendingBookings.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -331,95 +333,24 @@ public class BookingService {
         return !(newEnd.isBefore(existingStart) || newStart.isAfter(existingEnd));
     }
 
-    private BookingResponse convertToResponse(Booking booking) {
-        // Get item details
-        String itemName = "Unknown";
-        Long ownerId = null;
-        try {
-            ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
-            itemName = tool.getName();  // ✅ Fixed: using getter
-            ownerId = tool.getOwnerId();  // ✅ Fixed: using getter
-        } catch (Exception e) {
-            logger.warn("Could not fetch tool details for: {}", booking.getItemId());
-        }
-
-        // Get borrower details
-        String borrowerName = "Unknown";
-        try {
-            UserDto user = userServiceClient.getUserById(booking.getBorrowerId());
-            borrowerName = user.getName();  // ✅ Fixed: using getter
-        } catch (Exception e) {
-            logger.warn("Could not fetch borrower details for: {}", booking.getBorrowerId());
-        }
-
-        // Get owner details
-        String ownerName = "Unknown";
-        if (ownerId != null) {
-            try {
-                UserDto owner = userServiceClient.getUserById(ownerId);
-                ownerName = owner.getName();  // ✅ Fixed: using getter
-            } catch (Exception e) {
-                logger.warn("Could not fetch owner details for: {}", ownerId);
-            }
-        }
-
-        return BookingResponse.builder()
-                .id(booking.getId())
-                .itemId(booking.getItemId())
-                .itemName(itemName)
-                .borrowerId(booking.getBorrowerId())
-                .borrowerName(borrowerName)
-                .ownerId(ownerId)
-                .ownerName(ownerName)
-                .startDate(booking.getStartDate())
-                .endDate(booking.getEndDate())
-                .status(booking.getStatus().name())
-                .qrCode(booking.getQrCode())
-                .totalAmount(booking.getTotalAmount())
-                .depositAmount(booking.getDepositAmount())
-                .notes(booking.getNotes())
-                .createdAt(booking.getCreatedAt())
-                .approvedAt(booking.getApprovedAt())
-                .completedAt(booking.getCompletedAt())
-                .build();
-    }
-    // Add this method after getToolBookings() method
-
-    // Get pending bookings for owner (based on their tools)
-    public List<BookingResponse> getPendingBookingsForOwner(Long ownerId) {
-        // First, get all tools owned by this user from Tool Service
-        List<ToolDto> userTools;
-        try {
-            userTools = toolServiceClient.getToolsByOwner(ownerId);
-        } catch (Exception e) {
-            logger.error("Failed to fetch tools for owner: {}", ownerId, e);
-            return List.of();
-        }
-
-        if (userTools.isEmpty()) {
-            return List.of();
-        }
-
-        // Extract tool IDs
-        List<Long> toolIds = userTools.stream()
-                .map(ToolDto::getId)
-                .collect(Collectors.toList());
-
-        // Find pending bookings for these tools
-        List<Booking> pendingBookings = bookingRepository.findByItemIdInAndStatus(toolIds, BookingStatus.PENDING);
-
-        return pendingBookings.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
+    @Cacheable(value = "booking", key = "#bookingId", unless = "#result == null")
     public BookingResponse getBookingById(Long bookingId) {
+        logger.info("Fetching booking by id {} from DATABASE (cache miss)", bookingId);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
         return convertToResponse(booking);
     }
+
     // Return item - OWNER scans QR code
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#booking.getBorrowerId()"),
+            @CacheEvict(value = "booking", key = "#bookingId"),
+            @CacheEvict(value = "availability", allEntries = true)
+    })
     @Transactional
     public BookingResponse returnItem(Long bookingId, Long scannerId) {
+        logger.info("Returning item for booking {}, clearing related caches", bookingId);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
@@ -449,8 +380,14 @@ public class BookingService {
     }
 
     // Borrower requests return
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#userId"),
+            @CacheEvict(value = "booking", key = "#bookingId")
+    })
     @Transactional
     public BookingResponse requestReturn(Long bookingId, Long userId) {
+        logger.info("Return requested for booking {} by user {}", bookingId, userId);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
@@ -475,8 +412,15 @@ public class BookingService {
     }
 
     // Owner confirms return after scanning QR
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#booking.getBorrowerId()"),
+            @CacheEvict(value = "booking", key = "#bookingId"),
+            @CacheEvict(value = "availability", allEntries = true)
+    })
     @Transactional
     public BookingResponse confirmReturn(Long bookingId, Long ownerId) {
+        logger.info("Confirming return for booking {} by owner {}", bookingId, ownerId);
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
@@ -526,5 +470,121 @@ public class BookingService {
         return returnRequests.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    // Get pending bookings for owner (based on their tools)
+    public List<BookingResponse> getPendingBookingsForOwner(Long ownerId) {
+        // First, get all tools owned by this user from Tool Service
+        List<ToolDto> userTools;
+        try {
+            userTools = toolServiceClient.getToolsByOwner(ownerId);
+        } catch (Exception e) {
+            logger.error("Failed to fetch tools for owner: {}", ownerId, e);
+            return List.of();
+        }
+
+        if (userTools.isEmpty()) {
+            return List.of();
+        }
+
+        // Extract tool IDs
+        List<Long> toolIds = userTools.stream()
+                .map(ToolDto::getId)
+                .collect(Collectors.toList());
+
+        // Find pending bookings for these tools
+        List<Booking> pendingBookings = bookingRepository.findByItemIdInAndStatus(toolIds, BookingStatus.PENDING);
+
+        return pendingBookings.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Delete a booking (only allowed for REJECTED, CANCELLED, or COMPLETED status)
+    @Caching(evict = {
+            @CacheEvict(value = "userBookings", key = "#userId"),
+            @CacheEvict(value = "booking", key = "#bookingId"),
+            @CacheEvict(value = "toolBookings", key = "#booking.getItemId()")
+    })
+    @Transactional
+    public void deleteBooking(Long bookingId, Long userId) {
+        logger.info("Deleting booking {}, clearing related caches", bookingId);
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        // Verify the user is either the borrower or the owner
+        ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
+        boolean isBorrower = booking.getBorrowerId().equals(userId);
+        boolean isOwner = tool.getOwnerId().equals(userId);
+
+        if (!isBorrower && !isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own bookings");
+        }
+
+        // Only allow deletion of REJECTED, CANCELLED, or COMPLETED bookings
+        BookingStatus status = booking.getStatus();
+        if (status != BookingStatus.REJECTED &&
+                status != BookingStatus.CANCELLED &&
+                status != BookingStatus.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot delete booking with status: " + status + ". Only rejected, cancelled, or completed bookings can be deleted.");
+        }
+
+        bookingRepository.delete(booking);
+        logger.info("Booking deleted: {} by user: {}", bookingId, userId);
+    }
+
+    private BookingResponse convertToResponse(Booking booking) {
+        // Get item details
+        String itemName = "Unknown";
+        Long ownerId = null;
+        try {
+            ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
+            itemName = tool.getName();
+            ownerId = tool.getOwnerId();
+        } catch (Exception e) {
+            logger.warn("Could not fetch tool details for: {}", booking.getItemId());
+        }
+
+        // Get borrower details
+        String borrowerName = "Unknown";
+        try {
+            UserDto user = userServiceClient.getUserById(booking.getBorrowerId());
+            borrowerName = user.getName();
+        } catch (Exception e) {
+            logger.warn("Could not fetch borrower details for: {}", booking.getBorrowerId());
+        }
+
+        // Get owner details
+        String ownerName = "Unknown";
+        if (ownerId != null) {
+            try {
+                UserDto owner = userServiceClient.getUserById(ownerId);
+                ownerName = owner.getName();
+            } catch (Exception e) {
+                logger.warn("Could not fetch owner details for: {}", ownerId);
+            }
+        }
+
+        return BookingResponse.builder()
+                .id(booking.getId())
+                .itemId(booking.getItemId())
+                .itemName(itemName)
+                .borrowerId(booking.getBorrowerId())
+                .borrowerName(borrowerName)
+                .ownerId(ownerId)
+                .ownerName(ownerName)
+                .startDate(booking.getStartDate())
+                .endDate(booking.getEndDate())
+                .status(booking.getStatus().name())
+                .qrCode(booking.getQrCode())
+                .totalAmount(booking.getTotalAmount())
+                .depositAmount(booking.getDepositAmount())
+                .notes(booking.getNotes())
+                .createdAt(booking.getCreatedAt())
+                .approvedAt(booking.getApprovedAt())
+                .completedAt(booking.getCompletedAt())
+                .build();
     }
 }

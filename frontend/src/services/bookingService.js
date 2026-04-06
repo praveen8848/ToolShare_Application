@@ -80,6 +80,11 @@ const bookingService = {
     });
     return response.data;
   },
+  // Delete booking
+  deleteBooking: async (id) => {
+    const response = await api.delete(`/api/bookings/${id}`);
+    return response.data;
+  },
 };
 
 export default bookingService;
