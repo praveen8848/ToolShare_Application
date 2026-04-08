@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,7 +24,8 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    @Cacheable(value = "categories", unless = "#result == null || #result.isEmpty()")
+    // FIXED: Explicitly defined key as 'all' to prevent collision with getCategoryById keys
+    @Cacheable(value = "categories", key = "'all'", unless = "#result == null || #result.isEmpty()")
     public List<CategoryResponse> getAllCategories() {
         logger.info("Fetching all categories from DATABASE (cache miss)");
         List<Category> categories = categoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
@@ -44,8 +46,14 @@ public class CategoryService {
     @Transactional
     public CategoryResponse createCategory(Category category) {
         logger.info("Creating new category, clearing categories cache");
+
         if (categoryRepository.existsByName(category.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category name already exists");
+        }
+
+        // FIXED: Ensure the parent category actually exists before saving
+        if (category.getParentId() != null && !categoryRepository.existsById(category.getParentId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specified parent category does not exist");
         }
 
         Category savedCategory = categoryRepository.save(category);
@@ -67,11 +75,20 @@ public class CategoryService {
             category.setName(categoryDetails.getName());
         }
 
+        if (categoryDetails.getParentId() != null) {
+            // FIXED: Prevent a category from being its own parent (Circular Reference)
+            if (categoryDetails.getParentId().equals(id)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A category cannot be its own parent");
+            }
+            // FIXED: Ensure the new parent category actually exists
+            if (!categoryRepository.existsById(categoryDetails.getParentId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specified parent category does not exist");
+            }
+            category.setParentId(categoryDetails.getParentId());
+        }
+
         if (categoryDetails.getDescription() != null) {
             category.setDescription(categoryDetails.getDescription());
-        }
-        if (categoryDetails.getParentId() != null) {
-            category.setParentId(categoryDetails.getParentId());
         }
         if (categoryDetails.getIcon() != null) {
             category.setIcon(categoryDetails.getIcon());

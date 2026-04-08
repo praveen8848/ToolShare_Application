@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,15 +32,16 @@ public class ToolService {
     private final CategoryRepository categoryRepository;
     private final UserServiceClient userServiceClient;
 
+    // FIXED: Added @Cacheable. Without this, evicting "searchResults" does nothing!
+    @Cacheable(value = "searchResults", unless = "#result == null || #result.isEmpty()")
     public List<ToolResponse> getAllTools(Long categoryId, String status, String search) {
+        logger.info("Fetching all tools from DATABASE (cache miss) - Category: {}, Status: {}, Search: {}", categoryId, status, search);
         String toolStatus = null;
         if (status != null && !status.isEmpty()) {
             try {
-                // Validate status exists (optional)
                 Tool.ToolStatus.valueOf(status.toUpperCase());
                 toolStatus = status.toUpperCase();
             } catch (IllegalArgumentException e) {
-                // Invalid status, ignore and return empty
                 return List.of();
             }
         }
@@ -57,7 +59,9 @@ public class ToolService {
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found with id: " + id));
 
-        // Increment view count
+        // PRODUCTION WARNING: When Redis is enabled, this will ONLY increment
+        // on a cache miss. If 100 users view the tool while it is cached,
+        // the view count in the database will only go up by 1.
         toolRepository.incrementViewsCount(id);
 
         return convertToResponse(tool);
@@ -73,22 +77,20 @@ public class ToolService {
     }
 
     @Caching(evict = {
-            @CacheEvict(value = "tools", key = "#result.id"),
             @CacheEvict(value = "userTools", key = "#ownerId"),
             @CacheEvict(value = "searchResults", allEntries = true)
+            // Removed eviction for "tools" by ID because this is a new tool that isn't cached yet.
     })
     @Transactional
     public ToolResponse createTool(Long ownerId, CreateToolRequest request) {
         logger.info("Creating tool for user {}, clearing related caches", ownerId);
 
-        // Validate owner exists in User Service
         try {
             userServiceClient.getUserById(ownerId);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid owner ID: " + ownerId);
         }
 
-        // Validate category if provided
         if (request.getCategoryId() != null) {
             categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
@@ -105,7 +107,11 @@ public class ToolService {
         tool.setDepositAmount(request.getDepositAmount());
         tool.setLocation(request.getLocation());
 
-        // NEW: Save images
+        if (request.getPickupLocation() != null) tool.setPickupLocation(request.getPickupLocation());
+        if (request.getPickupInstructions() != null) tool.setPickupInstructions(request.getPickupInstructions());
+        if (request.getOwnerContact() != null) tool.setOwnerContact(request.getOwnerContact());
+        if (request.getContactMethod() != null) tool.setContactMethod(request.getContactMethod());
+
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             tool.setImages(request.getImages());
         }
@@ -128,37 +134,22 @@ public class ToolService {
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found"));
 
-        // Check if user is the owner
         if (!tool.getOwnerId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own tools");
         }
 
-        if (request.getName() != null) {
-            tool.setName(request.getName());
-        }
-        if (request.getDescription() != null) {
-            tool.setDescription(request.getDescription());
-        }
+        if (request.getName() != null) tool.setName(request.getName());
+        if (request.getDescription() != null) tool.setDescription(request.getDescription());
         if (request.getCategoryId() != null) {
             categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
             tool.setCategoryId(request.getCategoryId());
         }
-        if (request.getDailyRate() != null) {
-            tool.setDailyRate(request.getDailyRate());
-        }
-        if (request.getWeeklyRate() != null) {
-            tool.setWeeklyRate(request.getWeeklyRate());
-        }
-        if (request.getMonthlyRate() != null) {
-            tool.setMonthlyRate(request.getMonthlyRate());
-        }
-        if (request.getDepositAmount() != null) {
-            tool.setDepositAmount(request.getDepositAmount());
-        }
-        if (request.getLocation() != null) {
-            tool.setLocation(request.getLocation());
-        }
+        if (request.getDailyRate() != null) tool.setDailyRate(request.getDailyRate());
+        if (request.getWeeklyRate() != null) tool.setWeeklyRate(request.getWeeklyRate());
+        if (request.getMonthlyRate() != null) tool.setMonthlyRate(request.getMonthlyRate());
+        if (request.getDepositAmount() != null) tool.setDepositAmount(request.getDepositAmount());
+        if (request.getLocation() != null) tool.setLocation(request.getLocation());
         if (request.getStatus() != null) {
             try {
                 tool.setStatus(Tool.ToolStatus.valueOf(request.getStatus().toUpperCase()));
@@ -167,7 +158,11 @@ public class ToolService {
             }
         }
 
-        // NEW: Update images if provided
+        if (request.getPickupLocation() != null) tool.setPickupLocation(request.getPickupLocation());
+        if (request.getPickupInstructions() != null) tool.setPickupInstructions(request.getPickupInstructions());
+        if (request.getOwnerContact() != null) tool.setOwnerContact(request.getOwnerContact());
+        if (request.getContactMethod() != null) tool.setContactMethod(request.getContactMethod());
+
         if (request.getImages() != null) {
             tool.setImages(request.getImages());
         }
@@ -190,7 +185,6 @@ public class ToolService {
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found"));
 
-        // Check if user is the owner
         if (!tool.getOwnerId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own tools");
         }
@@ -199,10 +193,15 @@ public class ToolService {
         logger.info("Tool deleted with id: {} by owner: {}", id, userId);
     }
 
-    @CacheEvict(value = "tools", key = "#id")
+    // FIXED: Changing status to BORROWED affects search results and owner dashboards!
+    @Caching(evict = {
+            @CacheEvict(value = "tools", key = "#id"),
+            @CacheEvict(value = "userTools", allEntries = true),
+            @CacheEvict(value = "searchResults", allEntries = true)
+    })
     @Transactional
     public void updateToolStatus(Long id, String status) {
-        logger.info("Updating tool status for {}, clearing tool cache", id);
+        logger.info("Updating tool status for {}, clearing related caches", id);
 
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found"));
@@ -217,10 +216,11 @@ public class ToolService {
     }
 
     private ToolResponse convertToResponse(Tool tool) {
-        // Get category name (using separate method to avoid lambda issues)
         String categoryName = getCategoryName(tool.getCategoryId());
 
-        // Get owner name
+        // PRODUCTION WARNING: Microservice N+1 Problem
+        // If getAllTools returns 50 tools, this triggers 50 synchronous HTTP
+        // requests to the User Service. You should fetch these in bulk using an IN clause later.
         String ownerName = getOwnerName(tool.getOwnerId());
 
         return ToolResponse.builder()
@@ -239,7 +239,11 @@ public class ToolService {
                 .location(tool.getLocation())
                 .viewsCount(tool.getViewsCount())
                 .favoritesCount(tool.getFavoritesCount())
-                .images(tool.getImages())  // NEW: Add images to response
+                .images(tool.getImages())
+                .pickupLocation(tool.getPickupLocation())
+                .pickupInstructions(tool.getPickupInstructions())
+                .ownerContact(tool.getOwnerContact())
+                .contactMethod(tool.getContactMethod())
                 .createdAt(tool.getCreatedAt())
                 .updatedAt(tool.getUpdatedAt())
                 .build();
@@ -257,7 +261,7 @@ public class ToolService {
     private String getOwnerName(Long ownerId) {
         try {
             var user = userServiceClient.getUserById(ownerId);
-            return user.getName();  // ✅ Using getter method
+            return user.getName();
         } catch (Exception e) {
             logger.warn("Could not fetch owner name for user: {}", ownerId);
             return null;

@@ -1,6 +1,7 @@
 package com.toolsharing.tool_service.dto.request;
 
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,22 +15,31 @@ public class UpdateToolRequest {
 
     private Long categoryId;
 
-    @Positive(message = "Daily rate must be positive")
+    @PositiveOrZero(message = "Daily rate must be zero or positive")
     private BigDecimal dailyRate;
 
-    @Positive(message = "Weekly rate must be positive")
+    @PositiveOrZero(message = "Daily rate must be zero or positive")
     private BigDecimal weeklyRate;
 
-    @Positive(message = "Monthly rate must be positive")
+    @PositiveOrZero(message = "Daily rate must be zero or positive")
     private BigDecimal monthlyRate;
 
-    @Positive(message = "Deposit amount must be positive")
+    @PositiveOrZero(message = "Daily rate must be zero or positive")
     private BigDecimal depositAmount;
 
     private String location;
 
     private String status;
 
-    // NEW: Add images field for updating tool photos
+    // Images field for updating tool photos
     private List<String> images;
+
+    // NEW: Pickup details fields (update defaults for this tool)
+    private String pickupLocation;
+
+    private String pickupInstructions;
+
+    private String ownerContact;
+
+    private String contactMethod;  // CALL, TEXT, BOTH
 }

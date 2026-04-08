@@ -1,11 +1,51 @@
-import React from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import { FaSearch, FaPlus, FaCalendarAlt, FaArrowRight } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import toolService from '../services/toolService';
+import categoryService from '../services/categoryService';
+import { 
+  FaSearch, 
+  FaPlus, 
+  FaCalendarAlt, 
+  FaArrowRight, 
+  FaTools, 
+  FaLayerGroup, 
+  FaClipboardCheck, 
+  FaHandshake, 
+  FaUndo 
+} from 'react-icons/fa';
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState({
+    totalTools: 0,
+    totalCategories: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    const fetchPlatformStats = async () => {
+      try {
+        // Fetching global platform data for the overview
+        const [tools, categories] = await Promise.all([
+          toolService.getAllTools(),
+          categoryService.getAllCategories()
+        ]);
+        
+        setStats({
+          totalTools: tools?.length || 0,
+          totalCategories: categories?.length || 0,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Failed to fetch platform statistics:', error);
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchPlatformStats();
+  }, []);
 
   return (
     <div className="dashboard-wrapper">
@@ -14,7 +54,7 @@ const DashboardPage = () => {
           .dashboard-wrapper {
             background-color: #f8fafc; /* Very light slate background */
             min-height: 100vh;
-            padding-bottom: 3rem;
+            padding-bottom: 4rem;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
           }
           
@@ -59,14 +99,16 @@ const DashboardPage = () => {
           .icon-box.search { background-color: #eff6ff; color: #3b82f6; }
           .icon-box.add { background-color: #f0fdf4; color: #16a34a; }
           .icon-box.calendar { background-color: #f8fafc; color: #475569; }
+          .icon-box.stats { background-color: #fffbeb; color: #d97706; }
 
           /* Mission Banner */
           .mission-banner {
-            background: linear-gradient(to right, #0f172a, #1e293b);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             border-radius: 16px;
             color: white;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.5);
           }
           
           /* Clean Buttons */
@@ -83,17 +125,55 @@ const DashboardPage = () => {
           .link-primary-custom { color: #3b82f6; }
           .link-success-custom { color: #16a34a; }
           .link-neutral-custom { color: #475569; }
+
+          /* How it Works Timeline */
+          .process-step {
+            position: relative;
+            padding: 1.5rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            height: 100%;
+          }
+          .process-step:hover {
+            background: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+          }
+          .step-number {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #0f172a;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .step-icon {
+            color: #3b82f6;
+            margin-bottom: 1rem;
+            margin-top: 0.5rem;
+          }
         `}
       </style>
 
       <Container className="pt-5">
         
         {/* Welcome & Mission Banner */}
-        <div className="mission-banner p-4 p-md-5 mb-5 shadow-sm">
+        <div className="mission-banner p-4 p-md-5 mb-5">
           <Row className="align-items-center">
             <Col lg={8}>
               <h1 className="fw-bold mb-3" style={{ fontSize: '2.5rem', letterSpacing: '-0.025em' }}>
-                Welcome back, {user?.name || 'User'}.
+                Welcome back, {user?.name || 'Builder'}.
               </h1>
               <p className="mb-0" style={{ fontSize: '1.1rem', color: '#cbd5e1', lineHeight: '1.6', maxWidth: '90%' }}>
                 ToolShare connects people who have tools with those who need them. Share your idle tools, earn money, and help build a sustainable community.
@@ -103,18 +183,32 @@ const DashboardPage = () => {
         </div>
 
         {/* Top Level Stats */}
-        <h5 className="text-slate-900 fw-bold mb-3 letter-spacing-tight">Overview</h5>
+        <h5 className="text-slate-900 fw-bold mb-3 letter-spacing-tight">Platform Overview</h5>
         <Row className="mb-5 g-4">
           <Col md={6}>
-            <div className="modern-card p-4">
-              <p className="text-slate-500 fw-semibold text-uppercase mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>Total Tools Listed</p>
-              <h2 className="text-slate-900 fw-bold mb-0">0</h2>
+            <div className="modern-card p-4 d-flex align-items-center">
+              <div className="icon-box stats mb-0 me-4">
+                <FaTools size={22} />
+              </div>
+              <div>
+                <p className="text-slate-500 fw-semibold text-uppercase mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>Total Tools Listed</p>
+                <h2 className="text-slate-900 fw-bold mb-0">
+                  {stats.loading ? <Spinner animation="border" size="sm" /> : stats.totalTools}
+                </h2>
+              </div>
             </div>
           </Col>
           <Col md={6}>
-            <div className="modern-card p-4">
-              <p className="text-slate-500 fw-semibold text-uppercase mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>Active Bookings</p>
-              <h2 className="text-slate-900 fw-bold mb-0">0</h2>
+            <div className="modern-card p-4 d-flex align-items-center">
+              <div className="icon-box search mb-0 me-4">
+                <FaLayerGroup size={22} />
+              </div>
+              <div>
+                <p className="text-slate-500 fw-semibold text-uppercase mb-1" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>Active Categories</p>
+                <h2 className="text-slate-900 fw-bold mb-0">
+                  {stats.loading ? <Spinner animation="border" size="sm" /> : stats.totalCategories}
+                </h2>
+              </div>
             </div>
           </Col>
         </Row>
@@ -168,14 +262,56 @@ const DashboardPage = () => {
           </Col>
         </Row>
 
-        {/* Recent Activity */}
-        <h5 className="text-slate-900 fw-bold mb-3 letter-spacing-tight">Recent Activity</h5>
-        <div className="modern-card p-5 text-center">
-          <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#f1f5f9', color: '#94a3b8' }}>
-            <FaCalendarAlt size={24} />
-          </div>
-          <h6 className="text-slate-900 font-weight-600 mb-1">No activity yet</h6>
-          <p className="text-slate-500 small mb-0">When you list or rent tools, your history will appear here.</p>
+        {/* Dynamic How it Works Section */}
+        <h5 className="text-slate-900 fw-bold mb-3 letter-spacing-tight">How ToolShare Works</h5>
+        <div className="modern-card p-4 mb-5">
+          <Row className="g-4 mt-2">
+            
+            <Col lg={3} md={6}>
+              <div className="process-step">
+                <div className="step-number">1</div>
+                <FaSearch className="step-icon" size={28} />
+                <h6 className="fw-bold text-slate-900">Request & Book</h6>
+                <p className="text-slate-500 small mb-0">
+                  Find the perfect tool for your project, select your dates, and send a booking request to the owner.
+                </p>
+              </div>
+            </Col>
+
+            <Col lg={3} md={6}>
+              <div className="process-step">
+                <div className="step-number">2</div>
+                <FaClipboardCheck className="step-icon" size={28} style={{ color: '#8b5cf6' }} />
+                <h6 className="fw-bold text-slate-900">Owner Approval</h6>
+                <p className="text-slate-500 small mb-0">
+                  The owner reviews your request. Once confirmed, they provide secure pickup instructions and contact details.
+                </p>
+              </div>
+            </Col>
+
+            <Col lg={3} md={6}>
+              <div className="process-step">
+                <div className="step-number">3</div>
+                <FaHandshake className="step-icon" size={28} style={{ color: '#10b981' }} />
+                <h6 className="fw-bold text-slate-900">Pickup & Build</h6>
+                <p className="text-slate-500 small mb-0">
+                  Pick up the tool at the scheduled time. Complete your DIY project safely and efficiently.
+                </p>
+              </div>
+            </Col>
+
+            <Col lg={3} md={6}>
+              <div className="process-step">
+                <div className="step-number">4</div>
+                <FaUndo className="step-icon" size={28} style={{ color: '#f59e0b' }} />
+                <h6 className="fw-bold text-slate-900">Return & Refund</h6>
+                <p className="text-slate-500 small mb-0">
+                  Return the item cleanly. The owner confirms the return on their dashboard, automatically releasing your security deposit.
+                </p>
+              </div>
+            </Col>
+
+          </Row>
         </div>
 
       </Container>

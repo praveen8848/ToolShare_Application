@@ -1,5 +1,6 @@
 package com.toolsharing.booking_service.controller;
 
+import com.toolsharing.booking_service.dto.request.ApproveBookingRequest;
 import com.toolsharing.booking_service.dto.request.CreateBookingRequest;
 import com.toolsharing.booking_service.dto.response.AvailabilityResponse;
 import com.toolsharing.booking_service.dto.response.BookingResponse;
@@ -74,16 +75,18 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
-    // Approve a booking (owner action)
+    // Approve a booking (owner action) with pickup details
     @PutMapping("/{bookingId}/approve")
     public ResponseEntity<BookingResponse> approveBooking(
             @PathVariable Long bookingId,
-            @RequestHeader("X-User-Id") Long ownerId) {
+            @RequestHeader("X-User-Id") Long ownerId,
+            @Valid @RequestBody ApproveBookingRequest request) {
 
         logger.info("Approving booking: {} by owner: {}", bookingId, ownerId);
-        BookingResponse response = bookingService.approveBooking(bookingId, ownerId);
+        BookingResponse response = bookingService.approveBooking(bookingId, ownerId, request);
         return ResponseEntity.ok(response);
     }
+
 
     // Reject a booking (owner action)
     @PutMapping("/{bookingId}/reject")

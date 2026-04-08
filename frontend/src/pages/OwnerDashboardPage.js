@@ -2,17 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Alert, Spinner, Tabs, Tab } from 'react-bootstrap';
 import { FaCheckCircle, FaTimesCircle, FaClock, FaTools, FaCalendarAlt, FaUser, FaQrcode } from 'react-icons/fa';
 import ownerService from '../services/ownerService';
+import toolService from '../services/toolService';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom'; 
+import PickupDetailsModal from '../components/bookings/PickupDetailsModal';
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate(); 
   const [pendingBookings, setPendingBookings] = useState([]);
+  const [rejectedBookings, setRejectedBookings] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]);
   const [myTools, setMyTools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
+  const [showPickupModal, setShowPickupModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [toolPickupDetails, setToolPickupDetails] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -24,9 +30,15 @@ const OwnerDashboardPage = () => {
       const [bookings, tools, returns] = await Promise.all([
         ownerService.getPendingBookings(),
         ownerService.getMyTools(),
-        ownerService.getReturnRequests() // New method
+        ownerService.getReturnRequests()
       ]);
-      setPendingBookings(bookings);
+      
+      // Filter bookings by status
+      const pending = bookings.filter(b => b.status === 'PENDING');
+      const rejected = bookings.filter(b => b.status === 'REJECTED');
+      
+      setPendingBookings(pending);
+      setRejectedBookings(rejected);
       setMyTools(tools);
       setReturnRequests(returns);
     } catch (error) {
@@ -36,25 +48,12 @@ const OwnerDashboardPage = () => {
     }
   };
 
-  const handleApprove = async (bookingId) => {
-    setProcessing(bookingId);
-    try {
-      await ownerService.approveBooking(bookingId);
-      toast.success('Booking approved successfully!');
-      loadData();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to approve booking');
-    } finally {
-      setProcessing(null);
-    }
-  };
-
   const handleReject = async (bookingId) => {
     setProcessing(bookingId);
     try {
       await ownerService.rejectBooking(bookingId);
       toast.success('Booking rejected');
-      loadData();
+      loadData(); // Reload to update lists
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to reject booking');
     } finally {
@@ -84,6 +83,39 @@ const OwnerDashboardPage = () => {
       'COMPLETED': 'success',
     };
     return <Badge bg={variants[status] || 'secondary'}>{status}</Badge>;
+  };
+
+  const handleApproveClick = async (booking) => {
+    setSelectedBooking(booking);
+    setProcessing(booking.id);
+    try {
+      const tool = await toolService.getToolById(booking.itemId);
+      setToolPickupDetails({
+        pickupLocation: tool.pickupLocation || '',
+        pickupInstructions: tool.pickupInstructions || '',
+        ownerContact: tool.ownerContact || '',
+        contactMethod: tool.contactMethod || 'BOTH'
+      });
+      setShowPickupModal(true);
+    } catch (error) {
+      toast.error('Failed to load pickup details');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleConfirmApproval = async (pickupDetails) => {
+    setProcessing(selectedBooking?.id);
+    try {
+      await ownerService.approveBooking(selectedBooking.id, pickupDetails);
+      toast.success('Booking approved! Pickup details sent to borrower.');
+      loadData();
+      setShowPickupModal(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to approve booking');
+    } finally {
+      setProcessing(null);
+    }
   };
 
   if (loading) {
@@ -155,7 +187,7 @@ const OwnerDashboardPage = () => {
                           variant="success"
                           size="sm"
                           className="flex-grow-1"
-                          onClick={() => handleApprove(booking.id)}
+                          onClick={() => handleApproveClick(booking)}
                           disabled={processing === booking.id}
                         >
                           {processing === booking.id ? (
@@ -185,7 +217,53 @@ const OwnerDashboardPage = () => {
           )}
         </Tab>
 
-        {/* NEW: Return Requests Tab */}
+        {/* Rejected Bookings Tab */}
+        <Tab eventKey="rejected" title={`Rejected (${rejectedBookings.length})`}>
+          {rejectedBookings.length === 0 ? (
+            <Card className="text-center py-5">
+              <Card.Body>
+                <FaTimesCircle size={50} className="text-muted mb-3" />
+                <h5>No Rejected Bookings</h5>
+                <p className="text-muted">Rejected bookings will appear here.</p>
+              </Card.Body>
+            </Card>
+          ) : (
+            <Row>
+              {rejectedBookings.map((booking) => (
+                <Col key={booking.id} md={6} lg={4} className="mb-4">
+                  <Card className="h-100 shadow-sm border-danger">
+                    <Card.Header className="bg-danger text-white">
+                      <small>Rejected</small>
+                    </Card.Header>
+                    <Card.Body>
+                      <h5 className="mb-0">{booking.itemName}</h5>
+                      <div className="mb-3 mt-2">
+                        <div className="d-flex align-items-center mb-2">
+                          <FaUser className="text-muted me-2" />
+                          <small>Borrower: {booking.borrowerName}</small>
+                        </div>
+                        <div className="d-flex align-items-center mb-2">
+                          <FaCalendarAlt className="text-muted me-2" />
+                          <small>
+                            {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
+                          </small>
+                        </div>
+                      </div>
+                      <Alert variant="danger" className="mb-0">
+                        <small>This booking has been rejected.</small>
+                      </Alert>
+                    </Card.Body>
+                    <Card.Footer className="bg-white text-muted small">
+                      Rejected on {formatDate(booking.updatedAt)}
+                    </Card.Footer>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </Tab>
+
+        {/* Return Requests Tab */}
         <Tab eventKey="returns" title={`Return Requests (${returnRequests.length})`}>
           {returnRequests.length === 0 ? (
             <Card className="text-center py-5">
@@ -267,7 +345,7 @@ const OwnerDashboardPage = () => {
           )}
         </Tab>
 
-       <Tab eventKey="tools" title={`My Tools (${myTools.length})`}>
+        <Tab eventKey="tools" title={`My Tools (${myTools.length})`}>
           {myTools.length === 0 ? (
             <Card className="text-center py-5">
               <Card.Body>
@@ -325,8 +403,17 @@ const OwnerDashboardPage = () => {
               ))}
             </Row>
           )}
-          </Tab>
+        </Tab>
       </Tabs>
+
+      {/* Pickup Details Modal */}
+      <PickupDetailsModal
+        show={showPickupModal}
+        onHide={() => setShowPickupModal(false)}
+        booking={selectedBooking}
+        onConfirm={handleConfirmApproval}
+        toolPickupDetails={toolPickupDetails}
+      />
     </Container>
   );
 };

@@ -19,10 +19,18 @@ public class BookingResponse {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
-    private String qrCode;
+   // private String qrCode;
     private BigDecimal totalAmount;
     private BigDecimal depositAmount;
     private String notes;
+
+    // NEW: Pickup details for this specific booking
+    private LocalDateTime pickupDateTime;
+    private String pickupLocation;
+    private String pickupInstructions;
+    private String ownerContact;
+    private String contactMethod;
+
     private LocalDateTime createdAt;
     private LocalDateTime approvedAt;
     private LocalDateTime completedAt;

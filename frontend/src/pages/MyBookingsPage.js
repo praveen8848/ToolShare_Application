@@ -1,28 +1,27 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, Tabs, Tab, Modal } from 'react-bootstrap';
-import { FaCalendarAlt, FaTools, FaUser, FaCheckCircle, FaTimesCircle, FaClock, FaQrcode, FaTrash, FaEye } from 'react-icons/fa';
+import { FaCalendarAlt, FaTools, FaUser, FaCheckCircle, FaTimesCircle, FaClock, FaTrash, FaMapMarkerAlt, FaPhone, FaInfoCircle } from 'react-icons/fa';
 import { useBookings } from '../hooks/useBookings';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
-import QRCodeDisplay from '../components/bookings/QRCodeDisplay';
 import { toast } from 'react-toastify';
-import bookingService from '../services/bookingService';
 
 const MyBookingsPage = () => {
-  const { bookings, loading, error, cancelBooking, refreshBookings } = useBookings();
+  // FIXED: Added requestReturn to the destructured hook
+  const { bookings, loading, error, cancelBooking, deleteBooking, requestReturn } = useBookings();
   const navigate = useNavigate();
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
+  
   const [processing, setProcessing] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState(null);
+  const [expandedBooking, setExpandedBooking] = useState(null);
 
   // Filter bookings by status
-  const pendingBookings = bookings.filter(b => b.status === 'PENDING');
-  const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED');
-  const rejectedBookings = bookings.filter(b => b.status === 'REJECTED');
-  const cancelledBookings = bookings.filter(b => b.status === 'CANCELLED');
-  const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
+  const pendingBookings = bookings?.filter(b => b.status === 'PENDING') || [];
+  const confirmedBookings = bookings?.filter(b => b.status === 'CONFIRMED') || [];
+  const rejectedBookings = bookings?.filter(b => b.status === 'REJECTED') || [];
+  const cancelledBookings = bookings?.filter(b => b.status === 'CANCELLED') || [];
+  const completedBookings = bookings?.filter(b => b.status === 'COMPLETED') || [];
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -32,6 +31,7 @@ const MyBookingsPage = () => {
       'CANCELLED': 'secondary',
       'COMPLETED': 'info',
     };
+    
     const icons = {
       'PENDING': <FaClock className="me-1" />,
       'CONFIRMED': <FaCheckCircle className="me-1" />,
@@ -39,6 +39,7 @@ const MyBookingsPage = () => {
       'CANCELLED': <FaTimesCircle className="me-1" />,
       'COMPLETED': <FaCheckCircle className="me-1" />,
     };
+    
     const labels = {
       'PENDING': 'Pending Approval',
       'CONFIRMED': 'Confirmed',
@@ -46,8 +47,9 @@ const MyBookingsPage = () => {
       'CANCELLED': 'Cancelled',
       'COMPLETED': 'Completed',
     };
+    
     return (
-      <Badge bg={variants[status] || 'secondary'} className="px-3 py-2">
+      <Badge bg={variants[status] || 'secondary'} className="px-3 py-2 fw-medium rounded-pill">
         {icons[status]} {labels[status] || status}
       </Badge>
     );
@@ -55,60 +57,47 @@ const MyBookingsPage = () => {
 
   const handleCancelBooking = async (bookingId) => {
     setProcessing(bookingId);
-    const success = await cancelBooking(bookingId);
-    if (success) {
-      refreshBookings();
-    }
+    await cancelBooking(bookingId);
     setProcessing(null);
   };
 
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
-    
+
     setProcessing(bookingToDelete.id);
-    try {
-      // Call delete API (you'll need to add this to bookingService)
-      await bookingService.deleteBooking(bookingToDelete.id);
-      toast.success('Booking deleted successfully');
-      refreshBookings();
+    const success = await deleteBooking(bookingToDelete.id);
+
+    if (success) {
       setShowDeleteModal(false);
       setBookingToDelete(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete booking');
-    } finally {
-      setProcessing(null);
     }
+    setProcessing(null);
+  };
+
+  // FIXED: Added handleRequestReturn function
+  const handleRequestReturn = async (bookingId) => {
+    setProcessing(bookingId);
+    await requestReturn(bookingId);
+    setProcessing(null);
   };
 
   const canDelete = (booking) => {
-    return booking.status === 'REJECTED' || booking.status === 'COMPLETED' || booking.status === 'CANCELLED';
+    return ['REJECTED', 'COMPLETED', 'CANCELLED'].includes(booking.status);
   };
 
   const getActionButton = (booking) => {
     if (booking.status === 'CONFIRMED') {
       return (
-        <div className="d-flex gap-2">
-          <Button 
-            variant="outline-success" 
-            size="sm"
-            onClick={() => navigate(`/return/${booking.id}`)}
-            className="flex-grow-1"
-          >
-            <FaQrcode className="me-1" />
-            Return
-          </Button>
-          <Button 
-            variant="outline-primary" 
-            size="sm"
-            onClick={() => {
-              setSelectedBooking(booking);
-              setShowQRCode(true);
-            }}
-          >
-            <FaQrcode className="me-1" />
-            QR
-          </Button>
-        </div>
+        <Button 
+          variant="outline-success" 
+          size="sm"
+          // FIXED: Use the new handler instead of navigate()
+          onClick={() => handleRequestReturn(booking.id)}
+          disabled={processing === booking.id}
+          className="w-100 fw-medium"
+        >
+          {processing === booking.id ? <Spinner animation="border" size="sm" /> : 'Request Return'}
+        </Button>
       );
     }
     if (booking.status === 'PENDING') {
@@ -118,7 +107,7 @@ const MyBookingsPage = () => {
           size="sm"
           onClick={() => handleCancelBooking(booking.id)}
           disabled={processing === booking.id}
-          className="w-100"
+          className="w-100 fw-medium"
         >
           {processing === booking.id ? <Spinner animation="border" size="sm" /> : 'Cancel Request'}
         </Button>
@@ -127,74 +116,159 @@ const MyBookingsPage = () => {
     return null;
   };
 
+  const renderPickupDetails = (booking) => {
+    if (!booking.pickupLocation && !booking.pickupDateTime) return null;
+    
+    return (
+      <div className="mt-3 p-3 bg-light rounded border border-light">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h6 className="mb-0 text-primary fw-bold">
+            <FaMapMarkerAlt className="me-1" />
+            Pickup Information
+          </h6>
+          <Button
+            variant="link"
+            size="sm"
+            className="p-0 text-decoration-none"
+            onClick={() => setExpandedBooking(expandedBooking === booking.id ? null : booking.id)}
+          >
+            {expandedBooking === booking.id ? 'Hide Details' : 'Show Details'}
+          </Button>
+        </div>
+        
+        {(expandedBooking === booking.id || !booking.pickupDateTime) && (
+          <div className="mt-3 pt-2 border-top">
+            {booking.pickupDateTime && (
+              <div className="mb-2">
+                <small className="text-muted d-block text-uppercase fw-semibold" style={{fontSize: '0.75rem'}}>Date & Time</small>
+                <div className="fw-medium">
+                  <FaClock className="me-1 text-muted" size={12} />
+                  {formatDateTime(booking.pickupDateTime)}
+                </div>
+              </div>
+            )}
+            
+            {booking.pickupLocation && (
+              <div className="mb-2">
+                <small className="text-muted d-block text-uppercase fw-semibold" style={{fontSize: '0.75rem'}}>Location</small>
+                <div className="fw-medium">{booking.pickupLocation}</div>
+              </div>
+            )}
+            
+            {booking.pickupInstructions && (
+              <div className="mb-2">
+                <small className="text-muted d-block text-uppercase fw-semibold" style={{fontSize: '0.75rem'}}>Instructions</small>
+                <div className="text-secondary small">{booking.pickupInstructions}</div>
+              </div>
+            )}
+            
+            {booking.ownerContact && (
+              <div className="mb-2">
+                <small className="text-muted d-block text-uppercase fw-semibold" style={{fontSize: '0.75rem'}}>Contact</small>
+                <div className="fw-medium">
+                  <FaPhone className="me-1 text-muted" size={12} />
+                  {booking.ownerContact} <span className="text-muted small">({booking.contactMethod || 'Call/Text'})</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {!booking.pickupDateTime && (
+          <div className="mt-2">
+            <Alert variant="warning" className="mb-0 py-2 border-0">
+              <small className="fw-medium">
+                <FaInfoCircle className="me-1" />
+                Pickup details will be shared by the owner after approval.
+              </small>
+            </Alert>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderBookingCard = (booking) => (
     <Col key={booking.id} md={6} lg={4} className="mb-4">
-      <Card className="h-100 shadow-sm">
-        <Card.Body>
+      <Card className="h-100 shadow-sm border-0 bg-white">
+        <Card.Body className="d-flex flex-column">
           <div className="d-flex justify-content-between align-items-start mb-3">
-            <h5 className="mb-0">{booking.itemName || 'Unknown Tool'}</h5>
-            {getStatusBadge(booking.status)}
+            <h5 className="mb-0 fw-bold text-truncate pe-2">{booking.itemName || 'Unknown Tool'}</h5>
+            <div>{getStatusBadge(booking.status)}</div>
           </div>
           
-          <div className="mb-3">
+          <div className="mb-3 bg-light p-2 rounded">
             <div className="d-flex align-items-center mb-2">
               <FaCalendarAlt className="text-muted me-2" />
-              <small>
+              <small className="fw-medium">
                 {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
               </small>
             </div>
             <div className="d-flex align-items-center mb-2">
               <FaUser className="text-muted me-2" />
-              <small>Owner: {booking.ownerName || 'Unknown'}</small>
+              <small className="fw-medium">Owner: {booking.ownerName || 'Unknown'}</small>
             </div>
             <div className="d-flex align-items-center">
               <FaTools className="text-muted me-2" />
-              <small>Tool ID: #{booking.itemId}</small>
+              <small className="fw-medium">Tool ID: #{booking.itemId}</small>
             </div>
           </div>
-          
-          <hr />
           
           <div className="d-flex justify-content-between mb-2">
-            <span>Total Amount:</span>
-            <strong>{formatCurrency(booking.totalAmount)}</strong>
+            <span className="text-muted">Total Amount:</span>
+            <strong className="fs-5">{formatCurrency(booking.totalAmount)}</strong>
           </div>
+          
           {booking.depositAmount > 0 && (
             <div className="d-flex justify-content-between mb-3">
-              <span>Deposit:</span>
-              <span>{formatCurrency(booking.depositAmount)}</span>
+              <span className="text-muted">Deposit:</span>
+              <span className="fw-medium">{formatCurrency(booking.depositAmount)}</span>
             </div>
           )}
           
-          {getActionButton(booking)}
+          {booking.status === 'CONFIRMED' && renderPickupDetails(booking)}
           
-          {canDelete(booking) && (
-            <Button 
-              variant="outline-secondary" 
-              size="sm"
-              className="w-100 mt-2"
-              onClick={() => {
-                setBookingToDelete(booking);
-                setShowDeleteModal(true);
-              }}
-            >
-              <FaTrash className="me-1" />
-              Delete Booking
-            </Button>
-          )}
+          <div className="mt-auto pt-3">
+            {getActionButton(booking)}
+            
+            {canDelete(booking) && (
+              <Button 
+                variant="light" 
+                size="sm"
+                className="w-100 mt-2 text-danger border-0 hover-danger"
+                onClick={() => {
+                  setBookingToDelete(booking);
+                  setShowDeleteModal(true);
+                }}
+              >
+                <FaTrash className="me-1" />
+                Delete Record
+              </Button>
+            )}
+          </div>
         </Card.Body>
-        <Card.Footer className="bg-white text-muted small">
-          Booked on {formatDate(booking.createdAt)}
+        <Card.Footer className="bg-light border-0 text-muted text-center" style={{ fontSize: '0.8rem' }}>
+          Requested on {formatDate(booking.createdAt)}
         </Card.Footer>
       </Card>
     </Col>
+  );
+
+  const renderEmptyState = (icon, title, message) => (
+    <Card className="text-center py-5 border-0 shadow-sm bg-light">
+      <Card.Body>
+        {icon}
+        <h5 className="fw-bold mt-3">{title}</h5>
+        <p className="text-muted">{message}</p>
+      </Card.Body>
+    </Card>
   );
 
   if (loading) {
     return (
       <Container className="py-5 text-center">
         <Spinner animation="border" variant="primary" />
-        <p className="mt-2">Loading your bookings...</p>
+        <p className="mt-3 fw-medium text-muted">Loading your bookings...</p>
       </Container>
     );
   }
@@ -202,9 +276,9 @@ const MyBookingsPage = () => {
   if (error) {
     return (
       <Container className="py-5">
-        <Alert variant="danger">
+        <Alert variant="danger" className="border-0 shadow-sm">
           <Alert.Heading>Error Loading Bookings</Alert.Heading>
-          <p>{error}</p>
+          <p className="mb-0">{error}</p>
         </Alert>
       </Container>
     );
@@ -215,119 +289,76 @@ const MyBookingsPage = () => {
   return (
     <>
       <Container className="py-4">
-        <h2 className="mb-4">My Bookings</h2>
+        <h2 className="mb-4 fw-bold">My Bookings</h2>
         
         {!hasAnyBookings ? (
-          <Card className="text-center py-5">
+          <Card className="text-center py-5 border-0 shadow-sm">
             <Card.Body>
-              <FaCalendarAlt size={50} className="text-muted mb-3" />
-              <h4>No Bookings Yet</h4>
-              <p className="text-muted">You haven't made any bookings yet.</p>
-              <Button variant="primary" onClick={() => navigate('/browse')}>
-                Browse Tools
+              <FaCalendarAlt size={50} className="text-muted mb-3 opacity-50" />
+              <h4 className="fw-bold">No Bookings Yet</h4>
+              <p className="text-muted mb-4">You haven't rented any tools yet. Ready to start building?</p>
+              <Button variant="primary" size="lg" className="px-4 fw-medium" onClick={() => navigate('/browse')}>
+                Browse Available Tools
               </Button>
             </Card.Body>
           </Card>
         ) : (
-          <Tabs defaultActiveKey="pending" className="mb-4">
+          <Tabs defaultActiveKey="pending" className="mb-4 custom-tabs">
             <Tab eventKey="pending" title={`Pending (${pendingBookings.length})`}>
-              {pendingBookings.length === 0 ? (
-                <Card className="text-center py-5">
-                  <Card.Body>
-                    <FaClock size={40} className="text-muted mb-2" />
-                    <p className="text-muted">No pending bookings</p>
-                  </Card.Body>
-                </Card>
-              ) : (
-                <Row>{pendingBookings.map(renderBookingCard)}</Row>
-              )}
+              {pendingBookings.length === 0 
+                ? renderEmptyState(<FaClock size={40} className="text-muted opacity-50" />, "No Pending Requests", "You have no bookings awaiting approval.")
+                : <Row className="mt-3">{pendingBookings.map(renderBookingCard)}</Row>}
             </Tab>
 
             <Tab eventKey="confirmed" title={`Confirmed (${confirmedBookings.length})`}>
-              {confirmedBookings.length === 0 ? (
-                <Card className="text-center py-5">
-                  <Card.Body>
-                    <FaCheckCircle size={40} className="text-muted mb-2" />
-                    <p className="text-muted">No confirmed bookings</p>
-                  </Card.Body>
-                </Card>
-              ) : (
-                <Row>{confirmedBookings.map(renderBookingCard)}</Row>
-              )}
+              {confirmedBookings.length === 0 
+                ? renderEmptyState(<FaCheckCircle size={40} className="text-muted opacity-50" />, "No Confirmed Bookings", "You have no upcoming confirmed rentals.")
+                : <Row className="mt-3">{confirmedBookings.map(renderBookingCard)}</Row>}
             </Tab>
 
             <Tab eventKey="rejected" title={`Rejected (${rejectedBookings.length})`}>
-              {rejectedBookings.length === 0 ? (
-                <Card className="text-center py-5">
-                  <Card.Body>
-                    <FaTimesCircle size={40} className="text-muted mb-2" />
-                    <p className="text-muted">No rejected bookings</p>
-                  </Card.Body>
-                </Card>
-              ) : (
-                <Row>{rejectedBookings.map(renderBookingCard)}</Row>
-              )}
+              {rejectedBookings.length === 0 
+                ? renderEmptyState(<FaTimesCircle size={40} className="text-muted opacity-50" />, "No Rejected Requests", "None of your booking requests have been rejected.")
+                : <Row className="mt-3">{rejectedBookings.map(renderBookingCard)}</Row>}
             </Tab>
 
             <Tab eventKey="cancelled" title={`Cancelled (${cancelledBookings.length})`}>
-              {cancelledBookings.length === 0 ? (
-                <Card className="text-center py-5">
-                  <Card.Body>
-                    <FaTimesCircle size={40} className="text-muted mb-2" />
-                    <p className="text-muted">No cancelled bookings</p>
-                  </Card.Body>
-                </Card>
-              ) : (
-                <Row>{cancelledBookings.map(renderBookingCard)}</Row>
-              )}
+              {cancelledBookings.length === 0 
+                ? renderEmptyState(<FaTimesCircle size={40} className="text-muted opacity-50" />, "No Cancelled Bookings", "You haven't cancelled any of your requests.")
+                : <Row className="mt-3">{cancelledBookings.map(renderBookingCard)}</Row>}
             </Tab>
 
             <Tab eventKey="completed" title={`Completed (${completedBookings.length})`}>
-              {completedBookings.length === 0 ? (
-                <Card className="text-center py-5">
-                  <Card.Body>
-                    <FaCheckCircle size={40} className="text-muted mb-2" />
-                    <p className="text-muted">No completed bookings</p>
-                  </Card.Body>
-                </Card>
-              ) : (
-                <Row>{completedBookings.map(renderBookingCard)}</Row>
-              )}
+              {completedBookings.length === 0 
+                ? renderEmptyState(<FaCheckCircle size={40} className="text-muted opacity-50" />, "No Completed Bookings", "Your history of successfully returned tools will appear here.")
+                : <Row className="mt-3">{completedBookings.map(renderBookingCard)}</Row>}
             </Tab>
           </Tabs>
         )}
       </Container>
 
-      {/* QR Code Display Modal */}
-      <QRCodeDisplay
-        show={showQRCode}
-        onHide={() => setShowQRCode(false)}
-        booking={selectedBooking}
-      />
-
       {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete Booking</Modal.Title>
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered backdrop="static">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold">Delete Record</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Are you sure you want to delete this booking?</p>
-          <p className="text-muted small">This action cannot be undone.</p>
+          <p>Are you sure you want to delete this booking record? This action cannot be undone.</p>
           {bookingToDelete && (
-            <div className="bg-light p-2 rounded">
-              <small>
-                <strong>{bookingToDelete.itemName}</strong><br />
+            <div className="bg-light p-3 rounded border border-light mt-3">
+              <strong className="d-block mb-1">{bookingToDelete.itemName}</strong>
+              <small className="text-muted">
                 {formatDate(bookingToDelete.startDate)} - {formatDate(bookingToDelete.endDate)}
               </small>
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="light" className="fw-medium" onClick={() => setShowDeleteModal(false)}>
+            Keep Record
           </Button>
-          <Button variant="danger" onClick={handleDeleteBooking} disabled={processing === bookingToDelete?.id}>
-            {processing === bookingToDelete?.id ? <Spinner animation="border" size="sm" /> : 'Delete Booking'}
+          <Button variant="danger" className="fw-medium px-4" onClick={handleDeleteBooking} disabled={processing === bookingToDelete?.id}>
+            {processing === bookingToDelete?.id ? <Spinner animation="border" size="sm" /> : 'Delete'}
           </Button>
         </Modal.Footer>
       </Modal>

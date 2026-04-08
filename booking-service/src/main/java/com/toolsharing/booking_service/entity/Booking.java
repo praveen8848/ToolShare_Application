@@ -35,8 +35,8 @@ public class Booking {
     @Column(nullable = false)
     private BookingStatus status = BookingStatus.PENDING;
 
-    @Column(name = "qr_code", length = 500)
-    private String qrCode;
+  //  @Column(name = "qr_code", length = 500)
+   // private String qrCode;
 
     @Column(name = "total_amount", precision = 10, scale = 2)
     private BigDecimal totalAmount;
@@ -70,8 +70,25 @@ public class Booking {
         updatedAt = LocalDateTime.now();
     }
 
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    // NEW: Pickup details for this specific booking
+    @Column(name = "pickup_date_time")
+    private LocalDateTime pickupDateTime;
+
+    @Column(name = "pickup_location", length = 500)
+    private String pickupLocation;
+
+    @Column(name = "pickup_instructions", length = 1000)
+    private String pickupInstructions;
+
+    @Column(name = "owner_contact", length = 50)
+    private String ownerContact;
+
+    @Column(name = "contact_method", length = 20)
+    private String contactMethod;
 }

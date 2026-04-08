@@ -3,6 +3,7 @@ package com.toolsharing.tool_service.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class CreateToolRequest {
     private Long categoryId;
 
     @NotNull(message = "Daily rate is required")
-    @Positive(message = "Daily rate must be positive")
+    @PositiveOrZero(message = "Daily rate must be positive or zero")
     private BigDecimal dailyRate;
 
     private BigDecimal weeklyRate;
@@ -30,6 +31,15 @@ public class CreateToolRequest {
 
     private String location;
 
-    // NEW: Add images field for tool photos
+    // Images field for tool photos
     private List<String> images = new ArrayList<>();
+
+    // NEW: Pickup details fields (defaults for this tool)
+    private String pickupLocation;
+
+    private String pickupInstructions;
+
+    private String ownerContact;
+
+    private String contactMethod;  // CALL, TEXT, BOTH
 }

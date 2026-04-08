@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Form, Button, Card, Row, Col, Image, Alert, Spinner, Modal, InputGroup } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { FaUpload, FaTrash, FaPlus, FaSearch, FaFolderPlus, FaRupeeSign } from 'react-icons/fa';
+import { FaUpload, FaTrash, FaPlus, FaSearch, FaFolderPlus, FaRupeeSign, FaMapMarkerAlt, FaPhone, FaInfoCircle, FaArrowLeft } from 'react-icons/fa';
 import toolService from '../services/toolService';
 import categoryService from '../services/categoryService';
 import { toast } from 'react-toastify';
@@ -28,19 +28,45 @@ const AddToolPage = () => {
     monthlyRate: '',
     depositAmount: '',
     location: '',
+    pickupLocation: '',
+    pickupInstructions: '',
+    ownerContact: '',
+    contactMethod: 'BOTH'
   });
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [errors, setErrors] = useState({});
+  const [isFirstTool, setIsFirstTool] = useState(false);
+
+  const loadedRef = useRef(false);
 
   useEffect(() => {
-    loadCategories();
+    if (loadedRef.current) return;
+
+    loadedRef.current = true;
+
+    const init = async () => {
+      await Promise.all([
+        loadCategories(),
+        checkIfFirstTool()
+      ]);
+    };
+
+    init();
   }, []);
+
+  const checkIfFirstTool = async () => {
+    try {
+      const tools = await toolService.getMyTools();
+      setIsFirstTool(tools.length === 0);
+    } catch (error) {
+      console.error('Failed to check tools:', error);
+    }
+  };
 
   const loadCategories = async () => {
     try {
-      const data = await toolService.getCategories();
-      console.log('Loaded categories:', data); // Debug log
+      const data = await categoryService.getAllCategories();
       setCategories(data || []);
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -49,13 +75,14 @@ const AddToolPage = () => {
     }
   };
 
-  // Get filtered categories for display
   const getFilteredCategories = () => {
     if (!categorySearch.trim()) {
       return categories;
     }
-    return categories.filter(cat => 
-      cat.name && cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+
+    return categories.filter(cat =>
+      cat.name &&
+      cat.name.toLowerCase().includes(categorySearch.toLowerCase())
     );
   };
 
@@ -64,12 +91,14 @@ const AddToolPage = () => {
       toast.error('Category name is required');
       return;
     }
+
     if (!newCategory.description.trim()) {
       toast.error('Category description is required');
       return;
     }
 
     setCreatingCategory(true);
+
     try {
       const created = await categoryService.createCategory({
         name: newCategory.name,
@@ -77,16 +106,21 @@ const AddToolPage = () => {
         icon: newCategory.icon || '',
         displayOrder: categories.length
       });
+
       toast.success('Category created successfully!');
       setShowCategoryModal(false);
       setNewCategory({ name: '', description: '', icon: '' });
       setCategorySearch('');
-      // Refresh categories
+
       await loadCategories();
-      // Auto-select the newly created category
+
       if (created && created.id) {
-        setFormData(prev => ({ ...prev, categoryId: created.id }));
+        setFormData(prev => ({
+          ...prev,
+          categoryId: created.id
+        }));
       }
+
     } catch (error) {
       console.error('Create category error:', error);
       toast.error(error.response?.data?.message || 'Failed to create category');
@@ -142,6 +176,16 @@ const AddToolPage = () => {
       newErrors.dailyRate = 'Valid daily rate is required (can be 0 for free)';
     }
     if (images.length === 0) newErrors.images = 'At least one image is required';
+    
+    if (isFirstTool) {
+      if (!formData.pickupLocation?.trim()) {
+        newErrors.pickupLocation = 'Pickup location is required for your first tool';
+      }
+      if (!formData.ownerContact?.trim()) {
+        newErrors.ownerContact = 'Contact number is required for your first tool';
+      }
+    }
+    
     return newErrors;
   };
 
@@ -163,6 +207,10 @@ const AddToolPage = () => {
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : null,
         depositAmount: formData.depositAmount ? parseFloat(formData.depositAmount) : null,
         images: images,
+        pickupLocation: formData.pickupLocation,
+        pickupInstructions: formData.pickupInstructions,
+        ownerContact: formData.ownerContact,
+        contactMethod: formData.contactMethod
       });
       toast.success('Tool listed successfully!');
       navigate('/my-tools');
@@ -178,13 +226,29 @@ const AddToolPage = () => {
 
   return (
     <Container className="py-4">
-      <h2 className="mb-4">List Your Tool</h2>
+      
+      {/* UPDATED: Header with Back Button to match dashboard ratio */}
+      <div className="d-flex align-items-center mb-4">
+        <Button 
+          variant="link" 
+          className="text-decoration-none p-0 me-3 text-secondary" 
+          onClick={() => navigate('/my-tools')}
+          title="Back to My Tools"
+        >
+          <FaArrowLeft size={22} />
+        </Button>
+        <h2 className="mb-0">List Your Tool</h2>
+      </div>
       
       <Row>
         <Col lg={8} className="mx-auto">
           <Card className="shadow-sm">
             <Card.Body>
               <Form onSubmit={handleSubmit}>
+                {/* Tool Details Section */}
+                <h5 className="mb-3">Tool Details</h5>
+                <hr className="mt-0 mb-3" />
+
                 <Form.Group className="mb-3">
                   <Form.Label>Tool Name *</Form.Label>
                   <Form.Control
@@ -344,22 +408,110 @@ const AddToolPage = () => {
                   </Col>
                 </Row>
 
+                {/* Pickup Details Section */}
+                <h5 className="mb-3 mt-4">
+                  <FaMapMarkerAlt className="me-2" />
+                  Pickup & Contact Details
+                  {isFirstTool && <span className="text-danger ms-2">*</span>}
+                </h5>
+                <Alert variant="info" className="mb-3">
+                  <FaInfoCircle className="me-2" />
+                  These details will be shared with the borrower after booking confirmation.
+                  {isFirstTool && <strong> Required for your first tool.</strong>}
+                </Alert>
+
                 <Form.Group className="mb-3">
-                  <Form.Label>Pickup Location</Form.Label>
+                  <Form.Label>Pickup Location {isFirstTool && <span className="text-danger">*</span>}</Form.Label>
                   <Form.Control
                     type="text"
-                    name="location"
-                    value={formData.location}
+                    name="pickupLocation"
+                    value={formData.pickupLocation}
                     onChange={handleChange}
-                    placeholder="e.g., Downtown, Main Street area"
+                    placeholder="e.g., 123 Main Street, Apt 4B, City, ZIP"
+                    isInvalid={!!errors.pickupLocation}
                   />
                   <Form.Text className="text-muted">
-                    Full address will be shared after booking
+                    Full address where borrower will pick up the tool
+                  </Form.Text>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.pickupLocation}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Pickup Instructions</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    name="pickupInstructions"
+                    value={formData.pickupInstructions}
+                    onChange={handleChange}
+                    placeholder="e.g., Call when you arrive, ring bell #4B, I'll come down"
+                  />
+                  <Form.Text className="text-muted">
+                    Any special instructions for pickup
                   </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Images *</Form.Label>
+                  <Form.Label>Contact Number {isFirstTool && <span className="text-danger">*</span>}</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text><FaPhone /></InputGroup.Text>
+                    <Form.Control
+                      type="tel"
+                      name="ownerContact"
+                      value={formData.ownerContact}
+                      onChange={handleChange}
+                      placeholder="+91 98765 43210"
+                      isInvalid={!!errors.ownerContact}
+                    />
+                  </InputGroup>
+                  <Form.Text className="text-muted">
+                    Your phone number for borrower to contact you
+                  </Form.Text>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.ownerContact}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Preferred Contact Method</Form.Label>
+                  <div>
+                    <Form.Check
+                      inline
+                      label="Call"
+                      name="contactMethod"
+                      type="radio"
+                      value="CALL"
+                      checked={formData.contactMethod === 'CALL'}
+                      onChange={handleChange}
+                    />
+                    <Form.Check
+                      inline
+                      label="Text"
+                      name="contactMethod"
+                      type="radio"
+                      value="TEXT"
+                      checked={formData.contactMethod === 'TEXT'}
+                      onChange={handleChange}
+                    />
+                    <Form.Check
+                      inline
+                      label="Both"
+                      name="contactMethod"
+                      type="radio"
+                      value="BOTH"
+                      checked={formData.contactMethod === 'BOTH'}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </Form.Group>
+
+                {/* Images Section */}
+                <h5 className="mb-3 mt-4">Images *</h5>
+                <hr className="mt-0 mb-3" />
+
+                <Form.Group className="mb-3">
                   <div
                     {...getRootProps()}
                     className={`border rounded p-4 text-center ${isDragActive ? 'bg-light' : ''}`}

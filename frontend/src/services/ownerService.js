@@ -45,6 +45,15 @@ const ownerService = {
       });
       return response.data;
     },
+
+    // Update the approveBooking method to accept pickup details
+    approveBooking: async (bookingId, pickupDetails) => {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const response = await api.put(`/api/bookings/${bookingId}/approve`, pickupDetails, {
+        headers: { 'X-User-Id': user?.id }
+      });
+      return response.data;
+    },
 };
 
 export default ownerService;

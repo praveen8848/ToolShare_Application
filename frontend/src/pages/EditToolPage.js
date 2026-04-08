@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Card, Row, Col, Image, Alert, Spinner } from 'react-bootstrap';
+import { Container, Form, Button, Card, Row, Col, Image, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { FaUpload, FaTrash, FaSave, FaArrowLeft } from 'react-icons/fa';
+import { FaUpload, FaTrash, FaSave, FaArrowLeft, FaMapMarkerAlt, FaPhone, FaInfoCircle, FaRupeeSign } from 'react-icons/fa';
 import toolService from '../services/toolService';
 import { toast } from 'react-toastify';
 
@@ -25,6 +25,11 @@ const EditToolPage = () => {
     depositAmount: '',
     location: '',
     status: '',
+    // NEW: Pickup details fields
+    pickupLocation: '',
+    pickupInstructions: '',
+    ownerContact: '',
+    contactMethod: 'BOTH'
   });
   const [errors, setErrors] = useState({});
 
@@ -50,6 +55,11 @@ const EditToolPage = () => {
         depositAmount: tool.depositAmount || '',
         location: tool.location || '',
         status: tool.status || 'AVAILABLE',
+        // NEW: Load pickup details
+        pickupLocation: tool.pickupLocation || '',
+        pickupInstructions: tool.pickupInstructions || '',
+        ownerContact: tool.ownerContact || '',
+        contactMethod: tool.contactMethod || 'BOTH'
       });
       
       setExistingImages(tool.images || []);
@@ -132,6 +142,11 @@ const EditToolPage = () => {
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : null,
         depositAmount: formData.depositAmount ? parseFloat(formData.depositAmount) : null,
         images: allImages,
+        // Include pickup details
+        pickupLocation: formData.pickupLocation,
+        pickupInstructions: formData.pickupInstructions,
+        ownerContact: formData.ownerContact,
+        contactMethod: formData.contactMethod
       });
       toast.success('Tool updated successfully!');
       navigate('/my-tools');
@@ -177,6 +192,10 @@ const EditToolPage = () => {
           <Card className="shadow-sm">
             <Card.Body>
               <Form onSubmit={handleSubmit}>
+                {/* Tool Details Section */}
+                <h5 className="mb-3">Tool Details</h5>
+                <hr className="mt-0 mb-3" />
+
                 <Form.Group className="mb-3">
                   <Form.Label>Tool Name *</Form.Label>
                   <Form.Control
@@ -241,16 +260,19 @@ const EditToolPage = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Daily Rate *</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="dailyRate"
-                        value={formData.dailyRate}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                        isInvalid={!!errors.dailyRate}
-                      />
+                      <Form.Label>Daily Rate (₹) *</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="dailyRate"
+                          value={formData.dailyRate}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                          isInvalid={!!errors.dailyRate}
+                        />
+                      </InputGroup>
                       <Form.Control.Feedback type="invalid">
                         {errors.dailyRate}
                       </Form.Control.Feedback>
@@ -258,15 +280,18 @@ const EditToolPage = () => {
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Weekly Rate (Optional)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="weeklyRate"
-                        value={formData.weeklyRate}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                      />
+                      <Form.Label>Weekly Rate (₹) (Optional)</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="weeklyRate"
+                          value={formData.weeklyRate}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                        />
+                      </InputGroup>
                     </Form.Group>
                   </Col>
                 </Row>
@@ -274,45 +299,130 @@ const EditToolPage = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Monthly Rate (Optional)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="monthlyRate"
-                        value={formData.monthlyRate}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                      />
+                      <Form.Label>Monthly Rate (₹) (Optional)</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="monthlyRate"
+                          value={formData.monthlyRate}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                        />
+                      </InputGroup>
                     </Form.Group>
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Deposit Amount (Optional)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="depositAmount"
-                        value={formData.depositAmount}
-                        onChange={handleChange}
-                        placeholder="0.00"
-                      />
+                      <Form.Label>Deposit Amount (₹) (Optional)</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text><FaRupeeSign /></InputGroup.Text>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          name="depositAmount"
+                          value={formData.depositAmount}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                        />
+                      </InputGroup>
                     </Form.Group>
                   </Col>
                 </Row>
+
+                {/* Pickup Details Section */}
+                <h5 className="mb-3 mt-4">
+                  <FaMapMarkerAlt className="me-2" />
+                  Pickup & Contact Details
+                </h5>
+                <Alert variant="info" className="mb-3">
+                  <FaInfoCircle className="me-2" />
+                  These details will be shared with the borrower after booking confirmation.
+                </Alert>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Pickup Location</Form.Label>
                   <Form.Control
                     type="text"
-                    name="location"
-                    value={formData.location}
+                    name="pickupLocation"
+                    value={formData.pickupLocation}
                     onChange={handleChange}
-                    placeholder="e.g., Downtown, Main Street area"
+                    placeholder="e.g., 123 Main Street, Apt 4B, City, ZIP"
                   />
                   <Form.Text className="text-muted">
-                    Full address will be shared after booking
+                    Full address where borrower will pick up the tool
                   </Form.Text>
                 </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Pickup Instructions</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    name="pickupInstructions"
+                    value={formData.pickupInstructions}
+                    onChange={handleChange}
+                    placeholder="e.g., Call when you arrive, ring bell #4B, I'll come down"
+                  />
+                  <Form.Text className="text-muted">
+                    Any special instructions for pickup
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Contact Number</Form.Label>
+                  <InputGroup>
+                    <InputGroup.Text><FaPhone /></InputGroup.Text>
+                    <Form.Control
+                      type="tel"
+                      name="ownerContact"
+                      value={formData.ownerContact}
+                      onChange={handleChange}
+                      placeholder="+91 98765 43210"
+                    />
+                  </InputGroup>
+                  <Form.Text className="text-muted">
+                    Your phone number for borrower to contact you
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Preferred Contact Method</Form.Label>
+                  <div>
+                    <Form.Check
+                      inline
+                      label="Call"
+                      name="contactMethod"
+                      type="radio"
+                      value="CALL"
+                      checked={formData.contactMethod === 'CALL'}
+                      onChange={handleChange}
+                    />
+                    <Form.Check
+                      inline
+                      label="Text"
+                      name="contactMethod"
+                      type="radio"
+                      value="TEXT"
+                      checked={formData.contactMethod === 'TEXT'}
+                      onChange={handleChange}
+                    />
+                    <Form.Check
+                      inline
+                      label="Both"
+                      name="contactMethod"
+                      type="radio"
+                      value="BOTH"
+                      checked={formData.contactMethod === 'BOTH'}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </Form.Group>
+
+                {/* Images Section */}
+                <h5 className="mb-3 mt-4">Images</h5>
+                <hr className="mt-0 mb-3" />
 
                 {/* Existing Images */}
                 {existingImages.length > 0 && (

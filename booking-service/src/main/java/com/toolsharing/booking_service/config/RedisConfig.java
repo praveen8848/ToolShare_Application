@@ -1,5 +1,6 @@
 package com.toolsharing.booking_service.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -18,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@EnableCaching
+// @EnableCaching // Uncomment when Redis is ready
 public class RedisConfig {
 
     @Bean
@@ -45,6 +46,9 @@ public class RedisConfig {
         // Single booking cache - 10 minutes
         cacheConfigurations.put("booking", defaultConfig.entryTtl(Duration.ofMinutes(10)));
 
+        // NEW: Added the availability cache used by the checkAvailability method in BookingService
+        cacheConfigurations.put("availability", defaultConfig.entryTtl(Duration.ofMinutes(2)));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 .withInitialCacheConfigurations(cacheConfigurations)
@@ -55,6 +59,14 @@ public class RedisConfig {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // CRITICAL FIX: Tells Jackson to include the "@class" metadata inside the JSON
+        // This ensures Spring deserializes back into BookingResponse, not a LinkedHashMap
+        objectMapper.activateDefaultTyping(
+                objectMapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
 
         return new GenericJackson2JsonRedisSerializer(objectMapper);
     }

@@ -1,12 +1,13 @@
 // Format currency
 export const formatCurrency = (amount) => {
-  if (!amount) return '$0.00';
-  return new Intl.NumberFormat('en-US', {
+  if (!amount) return '₹0.00';
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 };
-
 // Format date
 export const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -17,7 +18,6 @@ export const formatDate = (dateString) => {
   });
 };
 
-// Format date with time
 export const formatDateTime = (dateString) => {
   if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleString('en-US', {
@@ -25,7 +25,7 @@ export const formatDateTime = (dateString) => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit',
+    minute: '2-digit'
   });
 };
 

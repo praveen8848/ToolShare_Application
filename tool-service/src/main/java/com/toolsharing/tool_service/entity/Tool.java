@@ -87,4 +87,17 @@ public class Tool {
     public enum ToolStatus {
         AVAILABLE, BORROWED, PENDING, MAINTENANCE
     }
+
+    // NEW: Pickup details fields (stored as defaults for this tool)
+    @Column(name = "pickup_location", length = 500)
+    private String pickupLocation;
+
+    @Column(name = "pickup_instructions", length = 1000)
+    private String pickupInstructions;
+
+    @Column(name = "owner_contact", length = 50)
+    private String ownerContact;
+
+    @Column(name = "contact_method", length = 20)
+    private String contactMethod;
 }
