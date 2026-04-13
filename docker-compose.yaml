@@ -1,7 +1,9 @@
 version: '3.8'
 
 services:
-
+  # ==========================================
+  # DATABASES
+  # ==========================================
   postgres-auth:
     image: postgres:16
     container_name: toolsharing-auth-postgres
@@ -27,7 +29,8 @@ services:
       - user_postgres_data:/var/lib/postgresql/data
 
   postgres-tool:
-    image: postgres:16
+    # Changed from postgres:16
+    image: postgis/postgis:16-3.4
     container_name: toolsharing-tool-postgres
     environment:
       POSTGRES_USER: postgres
@@ -36,6 +39,7 @@ services:
     ports:
       - "5434:5432"
     volumes:
+      # Your data is safe here
       - tool_postgres_data:/var/lib/postgresql/data
 
   postgres-booking:
@@ -50,7 +54,9 @@ services:
     volumes:
       - booking_postgres_data:/var/lib/postgresql/data
 
-    # Add Redis for rate limiting
+  # ==========================================
+  # CACHING & RATE LIMITING
+  # ==========================================
   redis:
     image: redis:7-alpine
     container_name: toolsharing-redis
@@ -65,9 +71,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==========================================
+  # MESSAGE BROKER (NEW)
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: toolsharing-rabbitmq
+    ports:
+      - "5672:5672"   # Standard AMQP port (Your Spring Boot apps connect here)
+      - "15672:15672" # Management UI port (You view the dashboard here)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   auth_postgres_data:
   user_postgres_data:
   tool_postgres_data:
   booking_postgres_data:
   redis_data:
+  rabbitmq_data: # Added for RabbitMQ persistence

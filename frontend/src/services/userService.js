@@ -66,6 +66,18 @@ const userService = {
       throw error;
     }
   },
+
+  // NEW: Resend verification email
+  resendVerification: async () => {
+    try {
+      // Assuming your api instance (axiosConfig) automatically attaches the JWT/User-ID headers
+      const response = await api.post('/api/users/resend-verification');
+      return response.data;
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      throw error;
+    }
+  }
 };
 
 export default userService;

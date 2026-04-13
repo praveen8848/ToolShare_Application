@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import userService from '../services/userService';
-import ownerService from '../services/ownerService';       // ADDED to fetch tools
-import bookingService from '../services/bookingService';   // ADDED to fetch bookings
+import ownerService from '../services/ownerService';       
+import bookingService from '../services/bookingService';   
 import { toast } from 'react-toastify';
 import { 
   FaEnvelope, 
@@ -14,7 +14,8 @@ import {
   FaShieldAlt, 
   FaChartBar,
   FaTimesCircle,
-  FaClock
+  FaClock,
+  FaPaperPlane
 } from 'react-icons/fa';
 
 // Restored the beautiful interactive Avatar Component
@@ -60,9 +61,9 @@ const ProfilePage = () => {
   
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resending, setResending] = useState(false); // NEW: State for resend button
   const [profile, setProfile] = useState(null);
   
-  // NEW: State to hold the dynamically calculated stats
   const [liveStats, setLiveStats] = useState({
     tools: 0,
     rentals: 0,
@@ -85,7 +86,6 @@ const ProfilePage = () => {
   const loadProfileAndStats = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Profile Data
       const data = await userService.getProfile();
       setProfile(data);
       setFormData({
@@ -96,22 +96,20 @@ const ProfilePage = () => {
         preferences: data.preferences || ''
       });
 
-      // 2. Fetch Live Stats from other microservices
       try {
         const [myTools, myBookings] = await Promise.all([
           ownerService.getMyTools().catch(() => []),
           bookingService.getUserBookings().catch(() => [])
         ]);
 
-        // Calculate Success Rate
         const completed = myBookings.filter(b => b.status === 'COMPLETED').length;
         const totalFinished = myBookings.filter(b => ['COMPLETED', 'REJECTED', 'CANCELLED'].includes(b.status)).length;
-        const successRate = totalFinished > 0 ? Math.round((completed / totalFinished) * 100) : 100; // Default to 100% if no finished bookings
+        const successRate = totalFinished > 0 ? Math.round((completed / totalFinished) * 100) : 100; 
 
         setLiveStats({
           tools: myTools.length || 0,
           rentals: myBookings.length || 0,
-          successRate: myBookings.length === 0 ? 0 : successRate, // 0 if brand new user
+          successRate: myBookings.length === 0 ? 0 : successRate, 
           calculating: false
         });
       } catch (statError) {
@@ -146,12 +144,25 @@ const ProfilePage = () => {
     }
   };
 
+  // NEW: Handler for resending verification email
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await userService.resendVerification();
+      toast.success('Verification email sent! Please check your terminal/inbox.');
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to send verification email.');
+    } finally {
+      setResending(false);
+    }
+  };
+
   const renderVerificationBadge = (status) => {
     switch(status) {
-      case 'VERIFIED': return <Badge bg="success"><FaCheckCircle className="me-1"/> Verified</Badge>;
-      case 'PENDING': return <Badge bg="warning" text="dark"><FaClock className="me-1"/> Pending</Badge>;
-      case 'REJECTED': return <Badge bg="danger"><FaTimesCircle className="me-1"/> Rejected</Badge>;
-      default: return <Badge bg="secondary"><FaShieldAlt className="me-1"/> Unverified</Badge>;
+      case 'VERIFIED': return <Badge bg="success" className="py-2 px-3"><FaCheckCircle className="me-1"/> Verified</Badge>;
+      case 'PENDING': return <Badge bg="warning" text="dark" className="py-2 px-3"><FaClock className="me-1"/> Pending</Badge>;
+      case 'REJECTED': return <Badge bg="danger" className="py-2 px-3"><FaTimesCircle className="me-1"/> Rejected</Badge>;
+      default: return <Badge bg="secondary" className="py-2 px-3"><FaShieldAlt className="me-1"/> Unverified</Badge>;
     }
   };
 
@@ -183,14 +194,6 @@ const ProfilePage = () => {
               <p className="text-muted small mb-3">
                 Member since {new Date(profile?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
-
-              <div className="d-flex justify-content-center gap-2 mb-4">
-                {renderVerificationBadge(profile?.verificationStatus)}
-                {profile?.accountStatus === 'ACTIVE' 
-                  ? <Badge bg="primary">Active Account</Badge> 
-                  : <Badge bg="danger">{profile?.accountStatus}</Badge>
-                }
-              </div>
               
               <hr className="my-4" />
               
@@ -234,7 +237,6 @@ const ProfilePage = () => {
         
         {/* RIGHT COLUMN: Stats & Edit Form */}
         <Col lg={8}>
-          {/* Activity Overview Card (Now using Live Stats) */}
           <Card className="shadow-sm border-0 mb-4">
             <Card.Header className="bg-white border-bottom py-3">
               <h6 className="mb-0 fw-bold d-flex align-items-center">
@@ -271,7 +273,6 @@ const ProfilePage = () => {
             </Card.Body>
           </Card>
 
-          {/* Edit Profile Form */}
           <Card className="shadow-sm border-0">
             <Card.Header className="bg-white border-bottom py-3">
               <h6 className="mb-0 fw-bold">Edit Profile Details</h6>

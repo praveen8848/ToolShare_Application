@@ -1,16 +1,51 @@
 import api from '../config/axiosConfig';
 
 const toolService = {
-  // Get all tools with optional filters
+  // Get all tools with optional filters (Now handles Spatial Search!)
   getAllTools: async (filters = {}) => {
-    const params = new URLSearchParams();
-    
-    if (filters.search) params.append('search', filters.search);
-    if (filters.category) params.append('categoryId', filters.category);
-    if (filters.status) params.append('status', filters.status);
-    
-    const response = await api.get(`/api/tools?${params.toString()}`);
-    return response.data;
+    try {
+      // 1. IF we have GPS coordinates, use the PostGIS nearby search
+      if (filters.lat && filters.lng) {
+        const params = new URLSearchParams();
+        params.append('lat', filters.lat);
+        params.append('lng', filters.lng);
+        params.append('radius', filters.radius || 10); // Default to 10km
+
+        const response = await api.get(`/api/tools/search/nearby?${params.toString()}`);
+        let localTools = response.data;
+
+        // Since the backend nearby endpoint only filters by geography, 
+        // we apply any active text/category filters to the results here.
+        if (filters.search) {
+          localTools = localTools.filter(t => 
+            t.name.toLowerCase().includes(filters.search.toLowerCase())
+          );
+        }
+        if (filters.category) {
+          localTools = localTools.filter(t => 
+            String(t.categoryId) === String(filters.category)
+          );
+        }
+        if (filters.status) {
+          localTools = localTools.filter(t => t.status === filters.status);
+        }
+
+        return localTools;
+      }
+
+      // 2. OTHERWISE, use the standard global search
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+      if (filters.category) params.append('categoryId', filters.category);
+      if (filters.status) params.append('status', filters.status);
+      
+      const response = await api.get(`/api/tools?${params.toString()}`);
+      return response.data;
+      
+    } catch (error) {
+      console.error("Error fetching tools:", error);
+      throw error;
+    }
   },
 
   // Get single tool by ID

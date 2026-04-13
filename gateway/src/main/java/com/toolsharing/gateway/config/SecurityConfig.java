@@ -21,6 +21,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchange -> exchange
+                        // Explicitly allow the email verification endpoint
+                        .pathMatchers("/api/users/verify-email/**").permitAll()
+                        // Keep other auth routes open if needed (e.g., login/register)
+                        .pathMatchers("/api/auth/**").permitAll()
+                        // For local testing, permitAll is okay,
+                        // but in production, anyExchange() would be .authenticated()
                         .anyExchange().permitAll()
                 )
                 .build();
@@ -30,27 +36,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow only your frontend origin
+        // Standard local development frontend origin
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
 
-        // Allow all common HTTP methods
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
-        ));
-
-        // Allow all headers
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-
-        // Allow credentials (cookies, authorization headers)
         configuration.setAllowCredentials(true);
-
-        // How long the preflight request can be cached
         configuration.setMaxAge(3600L);
 
-        // Headers to expose to the browser
-        configuration.setExposedHeaders(Arrays.asList(
-                "Authorization", "X-User-Id", "X-Correlation-Id"
-        ));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-User-Id"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

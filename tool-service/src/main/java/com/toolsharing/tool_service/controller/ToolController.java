@@ -33,6 +33,19 @@ public class ToolController {
         return ResponseEntity.ok(tools);
     }
 
+    // --- NEW: "Tools Near Me" Spatial Search Endpoint ---
+    @GetMapping("/search/nearby")
+    public ResponseEntity<List<ToolResponse>> getNearbyTools(
+            @RequestParam double lat,
+            @RequestParam double lng,
+            @RequestParam(defaultValue = "10.0") double radius) { // Radius defaults to 10km
+
+        logger.info("Fetching tools within {} km of lat: {}, lng: {}", radius, lat, lng);
+        List<ToolResponse> tools = toolService.getNearbyTools(lat, lng, radius);
+        return ResponseEntity.ok(tools);
+    }
+    // ----------------------------------------------------
+
     @GetMapping("/{id}")
     public ResponseEntity<ToolResponse> getToolById(@PathVariable Long id) {
         logger.info("Fetching tool with id: {}", id);
@@ -47,7 +60,7 @@ public class ToolController {
         return ResponseEntity.ok(tools);
     }
 
-    // NEW: Get current user's tools (uses X-User-Id header)
+    // Get current user's tools (uses X-User-Id header)
     @GetMapping("/my-tools")
     public ResponseEntity<List<ToolResponse>> getMyTools(
             @RequestHeader("X-User-Id") Long userId) {

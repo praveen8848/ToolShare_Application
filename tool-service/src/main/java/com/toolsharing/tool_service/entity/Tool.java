@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.locationtech.jts.geom.Point;
+
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -48,8 +51,9 @@ public class Tool {
     @Column(name = "deposit_amount", precision = 10, scale = 2)
     private BigDecimal depositAmount;
 
-    @Column(length = 500)
-    private String location;
+    // Mathematical PostGIS point for radius math
+    @Column(columnDefinition = "geography(Point,4326)")
+    private Point location;
 
     @Column(name = "views_count")
     private Integer viewsCount = 0;
@@ -57,7 +61,6 @@ public class Tool {
     @Column(name = "favorites_count")
     private Integer favoritesCount = 0;
 
-    // NEW: Add images support
     @ElementCollection
     @CollectionTable(name = "tool_images", joinColumns = @JoinColumn(name = "tool_id"))
     @Column(name = "image_url", columnDefinition = "TEXT")
@@ -88,9 +91,15 @@ public class Tool {
         AVAILABLE, BORROWED, PENDING, MAINTENANCE
     }
 
-    // NEW: Pickup details fields (stored as defaults for this tool)
-    @Column(name = "pickup_location", length = 500)
-    private String pickupLocation;
+    // ADD THESE:
+    @Column(name = "pincode", nullable = false)
+    private String pincode;
+
+    @Column(name = "city", nullable = false)
+    private String city;
+
+    @Column(name = "state", nullable = false)
+    private String state;
 
     @Column(name = "pickup_instructions", length = 1000)
     private String pickupInstructions;

@@ -44,4 +44,11 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
     @Transactional
     @Query("UPDATE Tool t SET t.favoritesCount = t.favoritesCount - 1 WHERE t.id = :toolId AND t.favoritesCount > 0")
     void decrementFavoritesCount(@Param("toolId") Long toolId);
+
+    @Query(value = "SELECT * FROM tools t WHERE t.location IS NOT NULL AND ST_DWithin(CAST(t.location AS geography), CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography), :radiusInMeters)", nativeQuery = true)
+    List<Tool> findToolsWithinRadius(
+            @Param("lat") double lat,
+            @Param("lng") double lng,
+            @Param("radiusInMeters") double radiusInMeters
+    );
 }

@@ -9,6 +9,10 @@ import com.toolsharing.tool_service.entity.Tool;
 import com.toolsharing.tool_service.repository.CategoryRepository;
 import com.toolsharing.tool_service.repository.ToolRepository;
 import lombok.RequiredArgsConstructor;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -31,8 +35,10 @@ public class ToolService {
     private final ToolRepository toolRepository;
     private final CategoryRepository categoryRepository;
     private final UserServiceClient userServiceClient;
+    private final GeocodingService geocodingService;
 
-    // FIXED: Added @Cacheable. Without this, evicting "searchResults" does nothing!
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
     @Cacheable(value = "searchResults", unless = "#result == null || #result.isEmpty()")
     public List<ToolResponse> getAllTools(Long categoryId, String status, String search) {
         logger.info("Fetching all tools from DATABASE (cache miss) - Category: {}, Status: {}, Search: {}", categoryId, status, search);
@@ -53,15 +59,23 @@ public class ToolService {
                 .collect(Collectors.toList());
     }
 
+    public List<ToolResponse> getNearbyTools(double lat, double lng, double radiusInKm) {
+        logger.info("Fetching nearby tools within {} km of {}, {}", radiusInKm, lat, lng);
+        double radiusInMeters = radiusInKm * 1000;
+
+        List<Tool> tools = toolRepository.findToolsWithinRadius(lat, lng, radiusInMeters);
+
+        return tools.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Cacheable(value = "tools", key = "#id", unless = "#result == null")
     public ToolResponse getToolById(Long id) {
         logger.info("Fetching tool by id {} from DATABASE (cache miss)", id);
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tool not found with id: " + id));
 
-        // PRODUCTION WARNING: When Redis is enabled, this will ONLY increment
-        // on a cache miss. If 100 users view the tool while it is cached,
-        // the view count in the database will only go up by 1.
         toolRepository.incrementViewsCount(id);
 
         return convertToResponse(tool);
@@ -79,7 +93,6 @@ public class ToolService {
     @Caching(evict = {
             @CacheEvict(value = "userTools", key = "#ownerId"),
             @CacheEvict(value = "searchResults", allEntries = true)
-            // Removed eviction for "tools" by ID because this is a new tool that isn't cached yet.
     })
     @Transactional
     public ToolResponse createTool(Long ownerId, CreateToolRequest request) {
@@ -105,12 +118,27 @@ public class ToolService {
         tool.setWeeklyRate(request.getWeeklyRate());
         tool.setMonthlyRate(request.getMonthlyRate());
         tool.setDepositAmount(request.getDepositAmount());
-        tool.setLocation(request.getLocation());
 
-        if (request.getPickupLocation() != null) tool.setPickupLocation(request.getPickupLocation());
+        // NEW: Setting granular location fields
+        if (request.getPincode() != null) tool.setPincode(request.getPincode());
+        if (request.getCity() != null) tool.setCity(request.getCity());
+        if (request.getState() != null) tool.setState(request.getState());
+
         if (request.getPickupInstructions() != null) tool.setPickupInstructions(request.getPickupInstructions());
         if (request.getOwnerContact() != null) tool.setOwnerContact(request.getOwnerContact());
         if (request.getContactMethod() != null) tool.setContactMethod(request.getContactMethod());
+
+        // NEW: Combine fields for a clean OpenStreetMap query
+        String geocodeQuery = request.getPincode() + ", " + request.getCity() + ", " + request.getState() + ", India";
+        double[] coords = geocodingService.getCoordinatesForAddress(geocodeQuery);
+
+        if (coords != null) {
+            Point locationPoint = geometryFactory.createPoint(new Coordinate(coords[1], coords[0]));
+            tool.setLocation(locationPoint);
+        } else {
+            // GRACEFUL DEGRADATION: Log warning, but do NOT throw an exception
+            logger.warn("Could not find GPS coordinates for: '{}'. Tool saved globally, but won't appear in local radius searches.", geocodeQuery);
+        }
 
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             tool.setImages(request.getImages());
@@ -149,7 +177,7 @@ public class ToolService {
         if (request.getWeeklyRate() != null) tool.setWeeklyRate(request.getWeeklyRate());
         if (request.getMonthlyRate() != null) tool.setMonthlyRate(request.getMonthlyRate());
         if (request.getDepositAmount() != null) tool.setDepositAmount(request.getDepositAmount());
-        if (request.getLocation() != null) tool.setLocation(request.getLocation());
+
         if (request.getStatus() != null) {
             try {
                 tool.setStatus(Tool.ToolStatus.valueOf(request.getStatus().toUpperCase()));
@@ -158,10 +186,38 @@ public class ToolService {
             }
         }
 
-        if (request.getPickupLocation() != null) tool.setPickupLocation(request.getPickupLocation());
         if (request.getPickupInstructions() != null) tool.setPickupInstructions(request.getPickupInstructions());
         if (request.getOwnerContact() != null) tool.setOwnerContact(request.getOwnerContact());
         if (request.getContactMethod() != null) tool.setContactMethod(request.getContactMethod());
+
+        // NEW: Track if location changed to avoid unnecessary API calls
+        boolean locationChanged = false;
+
+        if (request.getPincode() != null && !request.getPincode().equals(tool.getPincode())) {
+            tool.setPincode(request.getPincode());
+            locationChanged = true;
+        }
+        if (request.getCity() != null && !request.getCity().equals(tool.getCity())) {
+            tool.setCity(request.getCity());
+            locationChanged = true;
+        }
+        if (request.getState() != null && !request.getState().equals(tool.getState())) {
+            tool.setState(request.getState());
+            locationChanged = true;
+        }
+
+        // NEW: Re-geocode only if pincode, city, or state changed
+        if (locationChanged) {
+            String geocodeQuery = tool.getPincode() + ", " + tool.getCity() + ", " + tool.getState() + ", India";
+            double[] coords = geocodingService.getCoordinatesForAddress(geocodeQuery);
+            if (coords != null) {
+                Point locationPoint = geometryFactory.createPoint(new Coordinate(coords[1], coords[0]));
+                tool.setLocation(locationPoint);
+            } else {
+                logger.warn("Could not find GPS coordinates for updated address: '{}'. Location cleared.", geocodeQuery);
+                tool.setLocation(null);
+            }
+        }
 
         if (request.getImages() != null) {
             tool.setImages(request.getImages());
@@ -193,7 +249,6 @@ public class ToolService {
         logger.info("Tool deleted with id: {} by owner: {}", id, userId);
     }
 
-    // FIXED: Changing status to BORROWED affects search results and owner dashboards!
     @Caching(evict = {
             @CacheEvict(value = "tools", key = "#id"),
             @CacheEvict(value = "userTools", allEntries = true),
@@ -217,11 +272,14 @@ public class ToolService {
 
     private ToolResponse convertToResponse(Tool tool) {
         String categoryName = getCategoryName(tool.getCategoryId());
-
-        // PRODUCTION WARNING: Microservice N+1 Problem
-        // If getAllTools returns 50 tools, this triggers 50 synchronous HTTP
-        // requests to the User Service. You should fetch these in bulk using an IN clause later.
         String ownerName = getOwnerName(tool.getOwnerId());
+
+        Double latitude = null;
+        Double longitude = null;
+        if (tool.getLocation() != null) {
+            latitude = tool.getLocation().getY();
+            longitude = tool.getLocation().getX();
+        }
 
         return ToolResponse.builder()
                 .id(tool.getId())
@@ -236,11 +294,17 @@ public class ToolService {
                 .weeklyRate(tool.getWeeklyRate())
                 .monthlyRate(tool.getMonthlyRate())
                 .depositAmount(tool.getDepositAmount())
-                .location(tool.getLocation())
+                .latitude(latitude)
+                .longitude(longitude)
                 .viewsCount(tool.getViewsCount())
                 .favoritesCount(tool.getFavoritesCount())
                 .images(tool.getImages())
-                .pickupLocation(tool.getPickupLocation())
+
+                // NEW: Added the 3 new fields to the response mapping
+                .pincode(tool.getPincode())
+                .city(tool.getCity())
+                .state(tool.getState())
+
                 .pickupInstructions(tool.getPickupInstructions())
                 .ownerContact(tool.getOwnerContact())
                 .contactMethod(tool.getContactMethod())

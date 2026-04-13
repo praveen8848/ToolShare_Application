@@ -4,6 +4,7 @@ import com.toolsharing.booking_service.client.ToolDto;
 import com.toolsharing.booking_service.client.ToolServiceClient;
 import com.toolsharing.booking_service.client.UserDto;
 import com.toolsharing.booking_service.client.UserServiceClient;
+import com.toolsharing.booking_service.dto.NotificationEvent;
 import com.toolsharing.booking_service.dto.request.ApproveBookingRequest;
 import com.toolsharing.booking_service.dto.request.CreateBookingRequest;
 import com.toolsharing.booking_service.dto.response.AvailabilityResponse;
@@ -13,10 +14,10 @@ import com.toolsharing.booking_service.dto.response.SuggestedDatesResponse;
 import com.toolsharing.booking_service.entity.Booking;
 import com.toolsharing.booking_service.entity.BookingStatus;
 import com.toolsharing.booking_service.repository.BookingRepository;
-//import com.toolsharing.booking_service.util.QRCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -42,7 +43,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ToolServiceClient toolServiceClient;
     private final UserServiceClient userServiceClient;
-    // private final QRCodeGenerator qrCodeGenerator;
+    private final RabbitTemplate rabbitTemplate; // ADDED: RabbitMQ Template
 
     public AvailabilityResponse checkAvailability(Long itemId, LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
@@ -188,14 +189,41 @@ public class BookingService {
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setApprovedAt(java.time.LocalDateTime.now());
 
-//        String qrCodeFileName = qrCodeGenerator.generateQRCode(booking.getId(), booking.getBorrowerId(), booking.getItemId());
-//        booking.setQrCode(qrCodeFileName);
-
         Booking savedBooking = bookingRepository.save(booking);
 
         toolServiceClient.updateToolStatus(booking.getItemId(), "BORROWED");
 
         logger.info("Booking approved: {} for tool: {} by owner: {}", bookingId, booking.getItemId(), ownerId);
+
+        // ==========================================
+        // ADDED: Publish Notification Event to RabbitMQ
+        // ==========================================
+        try {
+            UserDto borrower = userServiceClient.getUserById(booking.getBorrowerId());
+
+            String emailBody = String.format(
+                    "Great news %s!\n\nYour booking for the '%s' has been approved.\n\nPickup Details:\nLocation: %s\nTime: %s\nInstructions: %s\nOwner Contact: %s\n\nHappy building!",
+                    borrower.getName(),
+                    tool.getName(),
+                    request.getPickupLocation(),
+                    request.getPickupDateTime().toString(),
+                    request.getPickupInstructions(),
+                    request.getOwnerContact()
+            );
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType("BOOKING_APPROVED")
+                    .recipientEmail(borrower.getEmail())
+                    .subject("Booking Approved: " + tool.getName())
+                    .messageBody(emailBody)
+                    .build();
+
+            rabbitTemplate.convertAndSend("toolshare_exchange", "notification_routing_key", event);
+            logger.info("Notification event sent to RabbitMQ for booking approval: {}", bookingId);
+
+        } catch (Exception e) {
+            logger.error("Failed to send notification event to RabbitMQ for booking approval: {}", bookingId, e);
+        }
 
         return convertToResponse(savedBooking);
     }
@@ -211,7 +239,9 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
+        // We fetch this once here to use for both security checks and notification
         ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
+
         if (!tool.getOwnerId().equals(ownerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only tool owner can reject bookings");
         }
@@ -224,8 +254,31 @@ public class BookingService {
         booking.setRejectedAt(java.time.LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
-
         logger.info("Booking rejected: {} for tool: {} by owner: {}", bookingId, booking.getItemId(), ownerId);
+
+        // ==========================================
+        // NOTIFICATION LOGIC
+        // ==========================================
+        try {
+
+            UserDto borrower = userServiceClient.getUserById(booking.getBorrowerId());
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType("BOOKING_REJECTED")
+                    .recipientEmail(borrower.getEmail())
+                    .subject("Update on your booking: " + tool.getName())
+                    .messageBody(String.format(
+                            "Hello %s,\n\nUnfortunately, your booking request for '%s' was not accepted at this time.\n\nBrowse other available tools on your dashboard!",
+                            borrower.getName(), tool.getName()
+                    ))
+                    .build();
+
+            rabbitTemplate.convertAndSend("toolshare_exchange", "notification_routing_key", event);
+            logger.info("Rejection notification sent to RabbitMQ for booking: {}", bookingId);
+        } catch (Exception e) {
+            // We log the error but don't throw it, so the DB update stays saved
+            logger.error("Failed to send rejection email for booking: {}", bookingId, e);
+        }
 
         return convertToResponse(savedBooking);
     }
@@ -380,6 +433,35 @@ public class BookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         logger.info("Return requested for booking: {} by borrower: {}", bookingId, userId);
+
+        // ==========================================
+        // ADDED: Publish Notification Event to RabbitMQ
+        // ==========================================
+        try {
+            ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
+            UserDto owner = userServiceClient.getUserById(tool.getOwnerId());
+            UserDto borrower = userServiceClient.getUserById(userId);
+
+            String emailBody = String.format(
+                    "Hello %s,\n\n%s has requested to return your '%s'.\n\nPlease log in to your dashboard to confirm the return once you receive it.",
+                    owner.getName(),
+                    borrower.getName(),
+                    tool.getName()
+            );
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType("RETURN_REQUESTED")
+                    .recipientEmail(owner.getEmail())
+                    .subject("Return Requested: " + tool.getName())
+                    .messageBody(emailBody)
+                    .build();
+
+            rabbitTemplate.convertAndSend("toolshare_exchange", "notification_routing_key", event);
+            logger.info("Notification event sent to RabbitMQ for return request: {}", bookingId);
+
+        } catch (Exception e) {
+            logger.error("Failed to send notification event to RabbitMQ for return request: {}", bookingId, e);
+        }
 
         return convertToResponse(savedBooking);
     }
@@ -538,7 +620,6 @@ public class BookingService {
                 .startDate(booking.getStartDate())
                 .endDate(booking.getEndDate())
                 .status(booking.getStatus().name())
-                //.qrCode(booking.getQrCode())
                 .totalAmount(booking.getTotalAmount())
                 .depositAmount(booking.getDepositAmount())
                 .notes(booking.getNotes())

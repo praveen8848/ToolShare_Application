@@ -1,13 +1,15 @@
 package com.toolsharing.booking_service.dto.response;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class BookingResponse {
     private Long id;
     private Long itemId;

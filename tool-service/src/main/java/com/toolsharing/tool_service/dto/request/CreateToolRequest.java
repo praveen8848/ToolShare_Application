@@ -2,7 +2,6 @@ package com.toolsharing.tool_service.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -16,30 +15,28 @@ public class CreateToolRequest {
     private String name;
 
     private String description;
-
     private Long categoryId;
 
     @NotNull(message = "Daily rate is required")
     @PositiveOrZero(message = "Daily rate must be positive or zero")
     private BigDecimal dailyRate;
-
     private BigDecimal weeklyRate;
-
     private BigDecimal monthlyRate;
-
     private BigDecimal depositAmount;
 
-    private String location;
-
-    // Images field for tool photos
     private List<String> images = new ArrayList<>();
 
-    // NEW: Pickup details fields (defaults for this tool)
-    private String pickupLocation;
+    // ADD THESE:
+    @NotBlank(message = "Pincode is required")
+    private String pincode;
+
+    @NotBlank(message = "City is required")
+    private String city;
+
+    @NotBlank(message = "State is required")
+    private String state;
 
     private String pickupInstructions;
-
     private String ownerContact;
-
-    private String contactMethod;  // CALL, TEXT, BOTH
+    private String contactMethod;
 }

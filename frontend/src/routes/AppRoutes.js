@@ -15,6 +15,7 @@ import EditToolPage from '../pages/EditToolPage';
 import CategoryManagementPage from '../pages/CategoryManagementPage';
 import ProfilePage from '../pages/ProfilePage';
 import ToolViewPage from '../pages/ToolViewPage';
+import VerifyEmailPage from '../pages/VerifyEmailPage';
 const AppRoutes = () => {
   return (
     <Routes>
@@ -120,6 +121,12 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }
     />
+    {/* <Route
+     path="/verify-email" 
+     element={
+     <VerifyEmailPage
+      />}
+    /> */}
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" />} />
       

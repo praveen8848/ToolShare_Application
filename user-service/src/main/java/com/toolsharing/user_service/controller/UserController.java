@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,6 @@ public class UserController {
 
     /**
      * Get current user profile
-     * Gateway validates JWT and adds X-User-Id header
      */
     @GetMapping("/profile")
     public ResponseEntity<UserProfileDto> getProfile(
@@ -84,7 +84,6 @@ public class UserController {
             @RequestHeader("X-User-Id") Long userId,
             @RequestParam(value = "file", required = false) MultipartFile file) {
 
-        // Validate file presence
         if (file == null || file.isEmpty()) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "No file provided");
@@ -92,7 +91,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
 
-        // Validate file size (max 5MB)
         if (file.getSize() > 5 * 1024 * 1024) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "File too large");
@@ -100,7 +98,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
 
-        // Validate file type
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             Map<String, String> error = new HashMap<>();
@@ -133,7 +130,7 @@ public class UserController {
     }
 
     /**
-     * Sync user from auth service (internal endpoint - no auth needed)
+     * Sync user from auth service
      */
     @PostMapping("/sync")
     public ResponseEntity<Void> syncUser(@RequestBody UserAuthDto authUser) {
@@ -162,5 +159,36 @@ public class UserController {
         Map<String, Boolean> response = new HashMap<>();
         response.put("exists", exists);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint hit by the React Frontend to verify the token
+     */
+    @PostMapping("/verify-email")
+    public ResponseEntity<Map<String, String>> verifyEmail(@RequestParam String token) {
+        boolean isVerified = userService.verifyEmailToken(token);
+
+        Map<String, String> response = new HashMap<>();
+        if (isVerified) {
+            response.put("message", "Email verified successfully!");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("error", "Invalid or expired verification link.");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /**
+     * Endpoint to manually trigger the verification email (Useful for testing)
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@RequestHeader("X-User-Id") Long userId) {
+        UserProfileDto profile = userService.getProfileByUserId(userId);
+
+        if (!profile.getEmailVerified()) {
+            userService.sendVerificationEmail(userId, profile.getEmail(), profile.getName());
+        }
+
+        return ResponseEntity.ok().build();
     }
 }

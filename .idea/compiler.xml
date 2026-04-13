@@ -7,11 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="auth-service" />
+        <module name="tool-service" />
+        <module name="booking-service" />
         <module name="user-service" />
         <module name="eureka-server" />
         <module name="gateway" />
-        <module name="tool-service" />
-        <module name="booking-service" />
+        <module name="notification-service" />
       </profile>
     </annotationProcessing>
   </component>
@@ -21,6 +22,7 @@
       <module name="booking-service" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
       <module name="gateway" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
       <module name="tool-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>

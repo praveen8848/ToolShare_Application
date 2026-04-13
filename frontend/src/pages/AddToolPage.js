@@ -19,6 +19,8 @@ const AddToolPage = () => {
     description: '',
     icon: ''
   });
+  
+  // FIXED: Removed pickupLocation, added pincode, city, state
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -27,12 +29,14 @@ const AddToolPage = () => {
     weeklyRate: '',
     monthlyRate: '',
     depositAmount: '',
-    location: '',
-    pickupLocation: '',
+    pincode: '',
+    city: '',
+    state: '',
     pickupInstructions: '',
     ownerContact: '',
     contactMethod: 'BOTH'
   });
+  
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [errors, setErrors] = useState({});
@@ -177,10 +181,12 @@ const AddToolPage = () => {
     }
     if (images.length === 0) newErrors.images = 'At least one image is required';
     
+    // FIXED: Require pincode, city, and state
+    if (!formData.pincode?.trim()) newErrors.pincode = 'Pincode is required';
+    if (!formData.city?.trim()) newErrors.city = 'City is required';
+    if (!formData.state?.trim()) newErrors.state = 'State is required';
+    
     if (isFirstTool) {
-      if (!formData.pickupLocation?.trim()) {
-        newErrors.pickupLocation = 'Pickup location is required for your first tool';
-      }
       if (!formData.ownerContact?.trim()) {
         newErrors.ownerContact = 'Contact number is required for your first tool';
       }
@@ -207,7 +213,9 @@ const AddToolPage = () => {
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : null,
         depositAmount: formData.depositAmount ? parseFloat(formData.depositAmount) : null,
         images: images,
-        pickupLocation: formData.pickupLocation,
+        pincode: formData.pincode,
+        city: formData.city,
+        state: formData.state,
         pickupInstructions: formData.pickupInstructions,
         ownerContact: formData.ownerContact,
         contactMethod: formData.contactMethod
@@ -216,7 +224,7 @@ const AddToolPage = () => {
       navigate('/my-tools');
     } catch (error) {
       console.error('Create tool error:', error);
-      toast.error(error.response?.data?.message || 'Failed to list tool');
+      toast.error(error.response?.data?.message || 'Failed to list tool. Ensure address is valid.');
     } finally {
       setLoading(false);
     }
@@ -227,7 +235,6 @@ const AddToolPage = () => {
   return (
     <Container className="py-4">
       
-      {/* UPDATED: Header with Back Button to match dashboard ratio */}
       <div className="d-flex align-items-center mb-4">
         <Button 
           variant="link" 
@@ -245,7 +252,6 @@ const AddToolPage = () => {
           <Card className="shadow-sm">
             <Card.Body>
               <Form onSubmit={handleSubmit}>
-                {/* Tool Details Section */}
                 <h5 className="mb-3">Tool Details</h5>
                 <hr className="mt-0 mb-3" />
 
@@ -408,48 +414,75 @@ const AddToolPage = () => {
                   </Col>
                 </Row>
 
-                {/* Pickup Details Section */}
                 <h5 className="mb-3 mt-4">
-                  <FaMapMarkerAlt className="me-2" />
-                  Pickup & Contact Details
-                  {isFirstTool && <span className="text-danger ms-2">*</span>}
+                  <FaMapMarkerAlt className="me-2 text-primary" />
+                  Location & Search Settings
                 </h5>
+                <hr className="mt-0 mb-3" />
+                
                 <Alert variant="info" className="mb-3">
                   <FaInfoCircle className="me-2" />
-                  These details will be shared with the borrower after booking confirmation.
-                  {isFirstTool && <strong> Required for your first tool.</strong>}
+                  <strong>Privacy First:</strong> We only use your Pincode, City, and State to place your tool on the map. Your exact house address is kept hidden until a booking is confirmed.
+                  {isFirstTool && <strong> (Contact details required for your first tool).</strong>}
                 </Alert>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Pickup Location {isFirstTool && <span className="text-danger">*</span>}</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="pickupLocation"
-                    value={formData.pickupLocation}
-                    onChange={handleChange}
-                    placeholder="e.g., 123 Main Street, Apt 4B, City, ZIP"
-                    isInvalid={!!errors.pickupLocation}
-                  />
-                  <Form.Text className="text-muted">
-                    Full address where borrower will pick up the tool
-                  </Form.Text>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.pickupLocation}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                <Row>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Pincode <span className="text-danger">*</span></Form.Label>
+                      <Form.Control 
+                        type="text" 
+                        name="pincode" 
+                        value={formData.pincode} 
+                        onChange={handleChange} 
+                        placeholder="e.g., 249404" 
+                        isInvalid={!!errors.pincode} 
+                      />
+                      <Form.Control.Feedback type="invalid">{errors.pincode}</Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>City <span className="text-danger">*</span></Form.Label>
+                      <Form.Control 
+                        type="text" 
+                        name="city" 
+                        value={formData.city} 
+                        onChange={handleChange} 
+                        placeholder="e.g., Haridwar" 
+                        isInvalid={!!errors.city} 
+                      />
+                      <Form.Control.Feedback type="invalid">{errors.city}</Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>State <span className="text-danger">*</span></Form.Label>
+                      <Form.Control 
+                        type="text" 
+                        name="state" 
+                        value={formData.state} 
+                        onChange={handleChange} 
+                        placeholder="e.g., Uttarakhand" 
+                        isInvalid={!!errors.state} 
+                      />
+                      <Form.Control.Feedback type="invalid">{errors.state}</Form.Control.Feedback>
+                    </Form.Group>
+                  </Col>
+                </Row>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Pickup Instructions</Form.Label>
+                  <Form.Label>Exact Address & Pickup Instructions</Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={2}
                     name="pickupInstructions"
                     value={formData.pickupInstructions}
                     onChange={handleChange}
-                    placeholder="e.g., Call when you arrive, ring bell #4B, I'll come down"
+                    placeholder="e.g., House No. 42, Opposite Gupta Sweets. Call when you arrive at the gate."
                   />
                   <Form.Text className="text-muted">
-                    Any special instructions for pickup
+                    Only shared with the borrower AFTER you approve their booking request.
                   </Form.Text>
                 </Form.Group>
 
@@ -507,15 +540,14 @@ const AddToolPage = () => {
                   </div>
                 </Form.Group>
 
-                {/* Images Section */}
                 <h5 className="mb-3 mt-4">Images *</h5>
                 <hr className="mt-0 mb-3" />
 
                 <Form.Group className="mb-3">
                   <div
                     {...getRootProps()}
-                    className={`border rounded p-4 text-center ${isDragActive ? 'bg-light' : ''}`}
-                    style={{ cursor: 'pointer' }}
+                    className={`border rounded p-4 text-center ${isDragActive ? 'bg-light border-primary' : ''}`}
+                    style={{ cursor: 'pointer', borderStyle: 'dashed' }}
                   >
                     <input {...getInputProps()} />
                     <FaUpload size={30} className="text-muted mb-2" />
@@ -571,9 +603,6 @@ const AddToolPage = () => {
                         </Col>
                       ))}
                     </Row>
-                    <Form.Text className="text-muted">
-                      The image with blue border will appear as the main preview
-                    </Form.Text>
                   </div>
                 )}
 
@@ -600,7 +629,6 @@ const AddToolPage = () => {
         </Col>
       </Row>
 
-      {/* Create Category Modal */}
       <Modal show={showCategoryModal} onHide={() => setShowCategoryModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>
