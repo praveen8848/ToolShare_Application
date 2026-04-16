@@ -43,8 +43,10 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ToolServiceClient toolServiceClient;
     private final UserServiceClient userServiceClient;
-    private final RabbitTemplate rabbitTemplate; // ADDED: RabbitMQ Template
+    private final RabbitTemplate rabbitTemplate;
 
+    // FIX 1: Added missing @Cacheable so it actually saves to Redis
+    @Cacheable(value = "availability", key = "#itemId + '_' + #startDate + '_' + #endDate")
     public AvailabilityResponse checkAvailability(Long itemId, LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start date must be before end date");
@@ -90,9 +92,11 @@ public class BookingService {
                 .build();
     }
 
+    // FIX 2: Added toolBookings eviction
     @Caching(evict = {
             @CacheEvict(value = "userBookings", key = "#borrowerId"),
-            @CacheEvict(value = "availability", key = "#request.getItemId() + '_' + #request.getStartDate() + '_' + #request.getEndDate()")
+            @CacheEvict(value = "toolBookings", key = "#request.itemId"),
+            @CacheEvict(value = "availability", key = "#request.itemId + '_' + #request.startDate + '_' + #request.endDate")
     })
     @Transactional
     public BookingResponse createBooking(Long borrowerId, CreateBookingRequest request) {
@@ -144,8 +148,10 @@ public class BookingService {
         return convertToResponse(savedBooking);
     }
 
+    // FIX 2: Added toolBookings eviction
     @Caching(evict = {
             @CacheEvict(value = "userBookings", key = "#result.borrowerId"),
+            @CacheEvict(value = "toolBookings", key = "#result.itemId"),
             @CacheEvict(value = "booking", key = "#bookingId"),
             @CacheEvict(value = "availability", allEntries = true)
     })
@@ -195,9 +201,6 @@ public class BookingService {
 
         logger.info("Booking approved: {} for tool: {} by owner: {}", bookingId, booking.getItemId(), ownerId);
 
-        // ==========================================
-        // ADDED: Publish Notification Event to RabbitMQ
-        // ==========================================
         try {
             UserDto borrower = userServiceClient.getUserById(booking.getBorrowerId());
 
@@ -228,8 +231,10 @@ public class BookingService {
         return convertToResponse(savedBooking);
     }
 
+    // FIX 2: Added toolBookings eviction
     @Caching(evict = {
             @CacheEvict(value = "userBookings", key = "#result.borrowerId"),
+            @CacheEvict(value = "toolBookings", key = "#result.itemId"),
             @CacheEvict(value = "booking", key = "#bookingId")
     })
     @Transactional
@@ -239,7 +244,6 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
-        // We fetch this once here to use for both security checks and notification
         ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
 
         if (!tool.getOwnerId().equals(ownerId)) {
@@ -256,11 +260,7 @@ public class BookingService {
         Booking savedBooking = bookingRepository.save(booking);
         logger.info("Booking rejected: {} for tool: {} by owner: {}", bookingId, booking.getItemId(), ownerId);
 
-        // ==========================================
-        // NOTIFICATION LOGIC
-        // ==========================================
         try {
-
             UserDto borrower = userServiceClient.getUserById(booking.getBorrowerId());
 
             NotificationEvent event = NotificationEvent.builder()
@@ -276,16 +276,18 @@ public class BookingService {
             rabbitTemplate.convertAndSend("toolshare_exchange", "notification_routing_key", event);
             logger.info("Rejection notification sent to RabbitMQ for booking: {}", bookingId);
         } catch (Exception e) {
-            // We log the error but don't throw it, so the DB update stays saved
             logger.error("Failed to send rejection email for booking: {}", bookingId, e);
         }
 
         return convertToResponse(savedBooking);
     }
 
+    // FIX 2: Added toolBookings eviction & availability flush
     @Caching(evict = {
             @CacheEvict(value = "userBookings", key = "#userId"),
-            @CacheEvict(value = "booking", key = "#bookingId")
+            @CacheEvict(value = "toolBookings", key = "#result.itemId"),
+            @CacheEvict(value = "booking", key = "#bookingId"),
+            @CacheEvict(value = "availability", allEntries = true)
     })
     @Transactional
     public BookingResponse cancelBooking(Long bookingId, Long userId) {
@@ -376,8 +378,10 @@ public class BookingService {
         return convertToResponse(booking);
     }
 
+    // FIX 2: Added toolBookings eviction
     @Caching(evict = {
             @CacheEvict(value = "userBookings", key = "#result.borrowerId"),
+            @CacheEvict(value = "toolBookings", key = "#result.itemId"),
             @CacheEvict(value = "booking", key = "#bookingId"),
             @CacheEvict(value = "availability", allEntries = true)
     })
@@ -409,8 +413,10 @@ public class BookingService {
         return convertToResponse(savedBooking);
     }
 
+    // FIX 2: Added toolBookings eviction
     @Caching(evict = {
-            @CacheEvict(value = "userBookings", key = "#userId"),
+            @CacheEvict(value = "userBookings", key = "#result.borrowerId"),
+            @CacheEvict(value = "toolBookings", key = "#result.itemId"),
             @CacheEvict(value = "booking", key = "#bookingId")
     })
     @Transactional
@@ -434,9 +440,6 @@ public class BookingService {
 
         logger.info("Return requested for booking: {} by borrower: {}", bookingId, userId);
 
-        // ==========================================
-        // ADDED: Publish Notification Event to RabbitMQ
-        // ==========================================
         try {
             ToolDto tool = toolServiceClient.getToolById(booking.getItemId());
             UserDto owner = userServiceClient.getUserById(tool.getOwnerId());
@@ -466,8 +469,10 @@ public class BookingService {
         return convertToResponse(savedBooking);
     }
 
+    // FIX 2: Added toolBookings eviction
     @Caching(evict = {
             @CacheEvict(value = "userBookings", key = "#result.borrowerId"),
+            @CacheEvict(value = "toolBookings", key = "#result.itemId"),
             @CacheEvict(value = "booking", key = "#bookingId"),
             @CacheEvict(value = "availability", allEntries = true)
     })
@@ -542,10 +547,13 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
+    // FIX 3: Changed to allEntries=true because if the owner deletes it,
+    // we don't have the borrowerId to evict their specific cache!
     @Caching(evict = {
-            @CacheEvict(value = "userBookings", key = "#userId"),
+            @CacheEvict(value = "userBookings", allEntries = true),
+            @CacheEvict(value = "toolBookings", allEntries = true),
             @CacheEvict(value = "booking", key = "#bookingId"),
-            @CacheEvict(value = "toolBookings", allEntries = true)
+            @CacheEvict(value = "availability", allEntries = true)
     })
     @Transactional
     public void deleteBooking(Long bookingId, Long userId) {

@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Image, Alert, Spinner, Modal } from 'react-bootstrap';
 import { 
   FaArrowLeft, FaEdit, FaTrash, FaMapMarkerAlt, FaCalendarAlt, 
-  FaUser, FaRupeeSign, FaImage, FaPhone, FaInfoCircle, FaSearchPlus, FaTags, FaEye 
+  FaUser, FaRupeeSign, FaImage, FaPhone, FaInfoCircle, FaSearchPlus, 
+  FaTags, FaEye, FaShieldAlt, FaCheckCircle, FaTools 
 } from 'react-icons/fa';
 import toolService from '../services/toolService';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -52,289 +53,626 @@ const ToolViewPage = () => {
 
   const getStatusBadge = (status) => {
     const variants = {
-      'AVAILABLE': 'success',
-      'BORROWED': 'warning',
-      'MAINTENANCE': 'danger',
+      'AVAILABLE': { bg: '#10b981', color: '#ffffff', text: 'Available', icon: '🟢' },
+      'BORROWED': { bg: '#f59e0b', color: '#0f172a', text: 'Borrowed', icon: '🟡' },
+      'MAINTENANCE': { bg: '#ef4444', color: '#ffffff', text: 'Maintenance', icon: '🔴' },
     };
+    const style = variants[status] || { bg: '#64748b', color: '#ffffff', text: status, icon: '' };
     return (
-      <Badge bg={variants[status] || 'secondary'} className="px-3 py-2 rounded-pill shadow-sm" style={{ fontSize: '0.85rem' }}>
-        {status === 'AVAILABLE' ? '🟢 Available' : status === 'BORROWED' ? '🟡 Borrowed' : '🔴 Maintenance'}
+      <Badge style={{ 
+        backgroundColor: style.bg, 
+        color: style.color,
+        padding: '8px 16px',
+        borderRadius: '12px',
+        fontWeight: 600,
+        fontSize: '0.85rem',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        {style.icon} {style.text}
       </Badge>
     );
   };
 
   if (loading) {
     return (
-      <Container className="py-5 text-center mt-5">
-        <Spinner animation="border" variant="primary" style={{ width: '3rem', height: '3rem' }} />
-        <h5 className="mt-3 text-muted">Loading your tool...</h5>
-      </Container>
+      <div className="tool-view-wrapper">
+        <style>
+          {`
+            .tool-view-wrapper {
+              background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+              min-height: 100vh;
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+          `}
+        </style>
+        <Container className="py-5 text-center">
+          <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+            <Spinner animation="border" style={{ color: '#60a5fa', width: '3rem', height: '3rem' }} />
+            <h5 className="mt-3" style={{ color: '#94a3b8' }}>Loading your tool...</h5>
+          </div>
+        </Container>
+      </div>
     );
   }
 
   if (!tool) {
     return (
-      <Container className="py-5">
-        <Alert variant="danger" className="rounded-4 border-0 shadow-sm p-4 text-center">
-          <Alert.Heading className="fw-bold">Tool Not Found</Alert.Heading>
-          <p>We couldn't find this tool in your inventory.</p>
-          <Button variant="outline-danger" className="mt-2 px-4" onClick={() => navigate('/my-tools')}>
-            Back to My Tools
-          </Button>
-        </Alert>
-      </Container>
+      <div className="tool-view-wrapper">
+        <Container className="py-5">
+          <Alert style={{ 
+            backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+            color: '#fca5a5',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '20px',
+            padding: '2rem'
+          }}>
+            <Alert.Heading className="fw-bold">Tool Not Found</Alert.Heading>
+            <p>We couldn't find this tool in your inventory.</p>
+            <Button 
+              className="mt-2"
+              style={{
+                background: 'transparent',
+                color: '#fca5a5',
+                border: '1px solid rgba(239, 68, 68, 0.5)',
+                borderRadius: '12px',
+                padding: '0.75rem 2rem',
+                fontWeight: 600
+              }}
+              onClick={() => navigate('/my-tools')}
+            >
+              Back to My Tools
+            </Button>
+          </Alert>
+        </Container>
+      </div>
     );
   }
 
-  // FIXED: Format the new location string for the owner view
   const locationString = [tool.city, tool.state].filter(Boolean).join(', ') + (tool.pincode ? ` - ${tool.pincode}` : '');
 
   return (
-    <Container className="py-4">
-      <Button 
-        variant="link" 
-        className="mb-4 text-decoration-none p-0 text-secondary hover-primary d-flex align-items-center"
-        onClick={() => navigate('/my-tools')}
-      >
-        <FaArrowLeft className="me-2" /> Back to Inventory
-      </Button>
+    <div className="tool-view-wrapper">
+      <style>
+        {`
+          .tool-view-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #e2e8f0;
+            padding-bottom: 3rem;
+          }
+          
+          .back-button {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid transparent;
+            background: transparent;
+          }
+          
+          .back-button:hover {
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
+          }
+          
+          .main-image-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            cursor: pointer;
+            height: 400px;
+            border: 1px solid #334155;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          }
+          
+          .main-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+          }
+          
+          .main-image-container:hover img {
+            transform: scale(1.05);
+          }
+          
+          .image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent);
+            color: white;
+          }
+          
+          .thumbnail-container {
+            border-radius: 12px;
+            overflow: hidden;
+            height: 100px;
+            cursor: pointer;
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
+          }
+          
+          .thumbnail-container:hover {
+            border-color: #60a5fa;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+          }
+          
+          .thumbnail-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+          }
+          
+          .thumbnail-container:hover img {
+            transform: scale(1.1);
+          }
+          
+          .stats-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+          
+          .pricing-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+          }
+          
+          .private-settings-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+          }
+          
+          .action-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            border-top: 4px solid #3b82f6;
+          }
+          
+          .info-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+          }
+          
+          .info-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #60a5fa;
+            flex-shrink: 0;
+          }
+          
+          .category-badge {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            color: #60a5fa;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 0.75rem;
+          }
+          
+          .btn-edit {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+          
+          .btn-edit:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            color: white;
+          }
+          
+          .btn-delete {
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+          }
+          
+          .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #f87171;
+          }
+          
+          .privacy-alert {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 14px;
+            padding: 1rem;
+            color: #93c5fd;
+            margin-bottom: 1.25rem;
+          }
+          
+          .modal-dark .modal-content {
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+          }
+          
+          .modal-dark .modal-header {
+            border-bottom: 1px solid #334155;
+          }
+          
+          .modal-dark .modal-footer {
+            border-top: 1px solid #334155;
+          }
+          
+          .modal-dark .btn-close {
+            filter: invert(1);
+          }
+          
+          .price-value {
+            color: #60a5fa;
+            font-weight: 700;
+          }
+        `}
+      </style>
 
-      <Row className="g-4">
-        {/* LEFT COLUMN: IMAGES */}
-        <Col lg={7}>
-          {tool.images && tool.images.length > 0 ? (
-            <div className="d-flex flex-column gap-2">
-              <div 
-                className="position-relative overflow-hidden rounded-4 shadow-sm"
-                style={{ cursor: 'pointer', height: '400px' }}
-                onClick={() => {
-                  setSelectedImage(tool.images[0]);
-                  setShowImageModal(true);
-                }}
-              >
-                <Image
-                  src={tool.images[0]}
-                  className="w-100 h-100 object-fit-cover transition-transform hover-zoom"
-                  alt={tool.name}
-                />
-                <div className="position-absolute bottom-0 start-0 w-100 p-3 bg-gradient-dark-bottom text-white text-end">
-                  <small><FaSearchPlus className="me-1"/> Click to expand</small>
-                </div>
-              </div>
+      <Container className="py-4">
+        <button 
+          className="back-button"
+          onClick={() => navigate('/my-tools')}
+        >
+          <FaArrowLeft className="me-2" /> Back to Inventory
+        </button>
 
-              {tool.images.length > 1 && (
-                <Row className="g-2 mt-1">
-                  {tool.images.slice(1, 4).map((img, idx) => (
-                    <Col key={idx} xs={4}>
-                      <div 
-                        className="rounded-3 overflow-hidden shadow-sm"
-                        style={{ height: '100px', cursor: 'pointer' }}
-                        onClick={() => {
-                          setSelectedImage(img);
-                          setShowImageModal(true);
-                        }}
-                      >
-                        <Image
-                          src={img}
-                          className="w-100 h-100 object-fit-cover hover-opacity"
-                          alt={`${tool.name} ${idx + 1}`}
-                        />
-                      </div>
-                    </Col>
-                  ))}
-                  {tool.images.length > 4 && (
-                    <Col xs={4}>
-                      <div 
-                        className="rounded-3 overflow-hidden shadow-sm position-relative bg-dark text-white d-flex align-items-center justify-content-center"
-                        style={{ height: '100px', cursor: 'pointer' }}
-                        onClick={() => {
-                          setSelectedImage(tool.images[4]);
-                          setShowImageModal(true);
-                        }}
-                      >
-                        <Image src={tool.images[4]} className="w-100 h-100 object-fit-cover opacity-50" />
-                        <div className="position-absolute fw-bold fs-5">+{tool.images.length - 4}</div>
-                      </div>
-                    </Col>
-                  )}
-                </Row>
-              )}
-            </div>
-          ) : (
-            <Card className="border-0 shadow-sm rounded-4 bg-light text-center d-flex align-items-center justify-content-center" style={{ height: '400px' }}>
-              <div className="text-muted">
-                <FaImage size={50} className="mb-3 opacity-50" />
-                <h5>No photos uploaded</h5>
-              </div>
-            </Card>
-          )}
-        </Col>
-
-        {/* RIGHT COLUMN: MANAGEMENT DASHBOARD */}
-        <Col lg={5}>
-          <div className="d-flex flex-column h-100">
-            {/* Header Info */}
-            <div className="mb-3">
-              <div className="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                  <Badge bg="light" text="primary" className="mb-2 border border-primary-subtle px-2 py-1">
-                    {tool.categoryName || 'Uncategorized'}
-                  </Badge>
-                  <h2 className="fw-bold mb-1">{tool.name}</h2>
-                </div>
-                <div>{getStatusBadge(tool.status)}</div>
-              </div>
-            </div>
-
-            {/* Performance Stats */}
-            <div className="d-flex gap-3 mb-4">
-              <div className="bg-light px-3 py-2 rounded-3 border d-flex align-items-center">
-                <FaEye className="text-primary me-2" />
-                <span className="fw-semibold me-1">{tool.viewsCount || 0}</span> 
-                <span className="text-muted small">Views</span>
-              </div>
-              <div className="bg-light px-3 py-2 rounded-3 border d-flex align-items-center">
-                <FaCalendarAlt className="text-primary me-2" />
-                <span className="text-muted small">Listed {formatDate(tool.createdAt)}</span>
-              </div>
-            </div>
-
-            <hr className="my-0 border-secondary-subtle" />
-
-            <div className="my-4 flex-grow-1">
-              {/* Pricing Information */}
-              <h5 className="fw-bold mb-3 d-flex align-items-center">
-                <FaTags className="me-2 text-primary" /> Pricing Configured
-              </h5>
-              <div className="bg-white border rounded-4 p-3 shadow-sm mb-4">
-                <Row className="g-3">
-                  <Col xs={6}>
-                    <p className="text-muted small mb-1">Daily Rate</p>
-                    <h5 className="fw-bold text-primary mb-0">{formatCurrency(tool.dailyRate)}</h5>
-                  </Col>
-                  <Col xs={6}>
-                    <p className="text-muted small mb-1">Weekly Rate</p>
-                    <h6 className="mb-0">{tool.weeklyRate ? formatCurrency(tool.weeklyRate) : '-'}</h6>
-                  </Col>
-                  <Col xs={6}>
-                    <p className="text-muted small mb-1">Monthly Rate</p>
-                    <h6 className="mb-0">{tool.monthlyRate ? formatCurrency(tool.monthlyRate) : '-'}</h6>
-                  </Col>
-                  <Col xs={6}>
-                    <p className="text-muted small mb-1">Security Deposit</p>
-                    <h6 className="mb-0">{tool.depositAmount ? formatCurrency(tool.depositAmount) : 'None'}</h6>
-                  </Col>
-                </Row>
-              </div>
-
-              {/* Private Settings (Location & Contact) */}
-              <h5 className="fw-bold mb-3 d-flex align-items-center">
-                <FaInfoCircle className="me-2 text-primary" /> Private Settings
-              </h5>
-              <div className="bg-light border rounded-4 p-3 mb-4">
-                <Alert variant="secondary" className="py-2 px-3 mb-3 border-0 bg-white small">
-                  These details are only shared with borrowers <strong>after</strong> you approve their request.
-                </Alert>
-                
-                <div className="mb-3">
-                  <strong className="d-flex align-items-center text-dark mb-1">
-                    <FaMapMarkerAlt className="me-2 text-muted" /> Public Search Area
-                  </strong>
-                  <div className="ms-4 text-muted small">{locationString || 'Not specified'}</div>
-                </div>
-
-                <div className="mb-3">
-                  <strong className="d-flex align-items-center text-dark mb-1">
-                    <FaMapMarkerAlt className="me-2 text-muted" /> Exact Pickup Instructions
-                  </strong>
-                  <div className="ms-4 text-muted small">{tool.pickupInstructions || 'No instructions provided.'}</div>
-                </div>
-
-                <div>
-                  <strong className="d-flex align-items-center text-dark mb-1">
-                    <FaPhone className="me-2 text-muted" /> Contact Info
-                  </strong>
-                  <div className="ms-4 text-muted small">
-                    {tool.ownerContact ? (
-                      <>
-                        {tool.ownerContact} <Badge bg="secondary" className="ms-1 fw-normal">{tool.contactMethod === 'BOTH' ? 'Call/Text' : tool.contactMethod}</Badge>
-                      </>
-                    ) : 'No contact provided'}
+        <Row className="g-4">
+          {/* LEFT COLUMN: IMAGES */}
+          <Col lg={7}>
+            {tool.images && tool.images.length > 0 ? (
+              <div className="d-flex flex-column gap-3">
+                <div 
+                  className="main-image-container"
+                  onClick={() => {
+                    setSelectedImage(tool.images[0]);
+                    setShowImageModal(true);
+                  }}
+                >
+                  <Image src={tool.images[0]} alt={tool.name} />
+                  <div className="image-overlay">
+                    <small>
+                      <FaSearchPlus className="me-1" /> Click to expand
+                    </small>
                   </div>
                 </div>
-              </div>
 
-              {/* Description */}
-              <div className="mb-4">
-                <h5 className="fw-bold mb-2">Description</h5>
-                <p className="text-secondary" style={{ whiteSpace: 'pre-line' }}>
-                  {tool.description || 'No description provided.'}
-                </p>
+                {tool.images.length > 1 && (
+                  <Row className="g-2 mt-1">
+                    {tool.images.slice(1, 4).map((img, idx) => (
+                      <Col key={idx} xs={4}>
+                        <div 
+                          className="thumbnail-container"
+                          onClick={() => {
+                            setSelectedImage(img);
+                            setShowImageModal(true);
+                          }}
+                        >
+                          <Image src={img} alt={`${tool.name} ${idx + 1}`} />
+                        </div>
+                      </Col>
+                    ))}
+                    {tool.images.length > 4 && (
+                      <Col xs={4}>
+                        <div 
+                          className="thumbnail-container position-relative"
+                          onClick={() => {
+                            setSelectedImage(tool.images[4]);
+                            setShowImageModal(true);
+                          }}
+                        >
+                          <Image src={tool.images[4]} style={{ opacity: 0.5 }} />
+                          <div className="position-absolute top-50 start-50 translate-middle fw-bold fs-5 text-white">
+                            +{tool.images.length - 4}
+                          </div>
+                        </div>
+                      </Col>
+                    )}
+                  </Row>
+                )}
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <Card className="border-0 shadow-sm rounded-4 border-top border-4 border-primary">
-              <Card.Body className="p-3">
-                <div className="d-flex gap-2">
-                  <Button
-                    variant="outline-primary"
-                    size="lg"
-                    className="flex-grow-1 fw-bold"
-                    onClick={() => navigate(`/edit-tool/${tool.id}`)}
-                  >
-                    <FaEdit className="me-2 mb-1" /> Edit
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="lg"
-                    className="fw-bold px-4"
-                    onClick={() => setShowDeleteModal(true)}
-                  >
-                    <FaTrash className="mb-1" />
-                  </Button>
+            ) : (
+              <div className="main-image-container d-flex align-items-center justify-content-center" style={{ cursor: 'default' }}>
+                <div className="text-center" style={{ color: '#64748b' }}>
+                  <FaTools size={50} className="mb-3 opacity-50" />
+                  <h5>No photos uploaded</h5>
                 </div>
-              </Card.Body>
-            </Card>
+              </div>
+            )}
+          </Col>
 
-          </div>
-        </Col>
-      </Row>
+          {/* RIGHT COLUMN: MANAGEMENT DASHBOARD */}
+          <Col lg={5}>
+            <div className="d-flex flex-column h-100">
+              {/* Header Info */}
+              <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <span className="category-badge">
+                      {tool.categoryName || 'Uncategorized'}
+                    </span>
+                    <h2 className="fw-bold mb-2" style={{ color: '#f1f5f9' }}>
+                      {tool.name}
+                    </h2>
+                  </div>
+                  <div>{getStatusBadge(tool.status)}</div>
+                </div>
+              </div>
 
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title className="text-danger fw-bold">Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p className="fs-5">Are you sure you want to delete <strong>{tool.name}</strong>?</p>
-          <Alert variant="danger" className="border-0 mb-0">
-            <FaInfoCircle className="me-2" />
-            This action cannot be undone. The tool will be permanently removed from your inventory.
-          </Alert>
-        </Modal.Body>
-        <Modal.Footer className="border-0 pt-0">
-          <Button variant="light" onClick={() => setShowDeleteModal(false)} className="fw-bold px-4">
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete} disabled={deleting} className="fw-bold px-4">
-            {deleting ? <><Spinner animation="border" size="sm" className="me-2" /> Deleting...</> : 'Yes, Delete Tool'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+              {/* Performance Stats */}
+              <div className="d-flex gap-3 mb-4">
+                <div className="stats-card">
+                  <FaEye style={{ color: '#60a5fa', fontSize: '1.2rem' }} />
+                  <div>
+                    <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: '1.1rem' }}>
+                      {tool.viewsCount || 0}
+                    </span>
+                    <span style={{ color: '#94a3b8', fontSize: '0.85rem', marginLeft: '4px' }}>
+                      Views
+                    </span>
+                  </div>
+                </div>
+                <div className="stats-card">
+                  <FaCalendarAlt style={{ color: '#60a5fa', fontSize: '1.1rem' }} />
+                  <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
+                    Listed {formatDate(tool.createdAt)}
+                  </span>
+                </div>
+              </div>
 
-      {/* Image Zoom Modal */}
-      <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered size="xl">
-        <Modal.Header closeButton className="border-0 pb-0"></Modal.Header>
-        <Modal.Body className="p-0 text-center bg-dark rounded-bottom">
-          <Image 
-            src={selectedImage} 
-            fluid 
-            style={{ maxHeight: '85vh', objectFit: 'contain' }}
-          />
-        </Modal.Body>
-      </Modal>
-    </Container>
+              <hr style={{ borderColor: '#334155' }} />
+
+              <div className="my-4 flex-grow-1">
+                {/* Pricing Information */}
+                <h5 className="fw-bold mb-3 d-flex align-items-center" style={{ color: '#f1f5f9' }}>
+                  <FaTags className="me-2" style={{ color: '#60a5fa' }} /> Pricing
+                </h5>
+                <div className="pricing-card">
+                  <Row className="g-3">
+                    <Col xs={6}>
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Daily Rate</p>
+                      <h5 className="price-value mb-0 d-flex align-items-center">
+                        <FaRupeeSign size={16} className="me-1" />
+                        {tool.dailyRate?.toLocaleString('en-IN') || '0'}
+                      </h5>
+                    </Col>
+                    <Col xs={6}>
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Weekly Rate</p>
+                      <h6 style={{ color: '#e2e8f0' }} className="mb-0">
+                        {tool.weeklyRate ? (
+                          <><FaRupeeSign size={12} className="me-1" />{tool.weeklyRate.toLocaleString('en-IN')}</>
+                        ) : '-'}
+                      </h6>
+                    </Col>
+                    <Col xs={6}>
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Monthly Rate</p>
+                      <h6 style={{ color: '#e2e8f0' }} className="mb-0">
+                        {tool.monthlyRate ? (
+                          <><FaRupeeSign size={12} className="me-1" />{tool.monthlyRate.toLocaleString('en-IN')}</>
+                        ) : '-'}
+                      </h6>
+                    </Col>
+                    <Col xs={6}>
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Security Deposit</p>
+                      <h6 style={{ color: '#e2e8f0' }} className="mb-0">
+                        {tool.depositAmount ? (
+                          <><FaRupeeSign size={12} className="me-1" />{tool.depositAmount.toLocaleString('en-IN')}</>
+                        ) : 'None'}
+                      </h6>
+                    </Col>
+                  </Row>
+                </div>
+
+                {/* Private Settings */}
+                <h5 className="fw-bold mb-3 d-flex align-items-center" style={{ color: '#f1f5f9' }}>
+                  <FaShieldAlt className="me-2" style={{ color: '#60a5fa' }} /> Private Settings
+                </h5>
+                <div className="private-settings-card">
+                  <div className="privacy-alert">
+                    <FaInfoCircle className="me-2" />
+                    <span>These details are only shared with borrowers <strong>after</strong> you approve their request.</span>
+                  </div>
+                  
+                  <div className="info-row">
+                    <div className="info-icon">
+                      <FaMapMarkerAlt size={16} />
+                    </div>
+                    <div>
+                      <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}>Public Search Area</h6>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
+                        {locationString || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="info-row">
+                    <div className="info-icon">
+                      <FaMapMarkerAlt size={16} />
+                    </div>
+                    <div>
+                      <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}>Exact Pickup Instructions</h6>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
+                        {tool.pickupInstructions || 'No instructions provided.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="info-row">
+                    <div className="info-icon">
+                      <FaPhone size={16} />
+                    </div>
+                    <div>
+                      <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}>Contact Info</h6>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
+                        {tool.ownerContact ? (
+                          <>
+                            {tool.ownerContact} 
+                            <Badge style={{ 
+                              background: '#334155', 
+                              color: '#94a3b8',
+                              marginLeft: '8px',
+                              fontWeight: 400
+                            }}>
+                              {tool.contactMethod === 'BOTH' ? 'Call/Text' : tool.contactMethod}
+                            </Badge>
+                          </>
+                        ) : 'No contact provided'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="mb-4">
+                  <h5 className="fw-bold mb-2" style={{ color: '#f1f5f9' }}>Description</h5>
+                  <p style={{ color: '#94a3b8', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
+                    {tool.description || 'No description provided.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="action-card">
+                <Card.Body className="p-3">
+                  <div className="d-flex gap-2">
+                    <Button
+                      className="btn-edit flex-grow-1"
+                      onClick={() => navigate(`/edit-tool/${tool.id}`)}
+                    >
+                      <FaEdit className="me-2" /> Edit Tool
+                    </Button>
+                    <Button
+                      className="btn-delete"
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      <FaTrash />
+                    </Button>
+                  </div>
+                </Card.Body>
+              </div>
+
+            </div>
+          </Col>
+        </Row>
+
+        {/* Delete Confirmation Modal */}
+        <Modal 
+          show={showDeleteModal} 
+          onHide={() => setShowDeleteModal(false)} 
+          centered
+          className="modal-dark"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title style={{ color: '#ef4444', fontWeight: 700 }}>Confirm Deletion</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p style={{ fontSize: '1.1rem', color: '#e2e8f0' }}>
+              Are you sure you want to delete <strong style={{ color: '#f1f5f9' }}>{tool.name}</strong>?
+            </p>
+            <Alert style={{ 
+              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+              color: '#fca5a5',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px'
+            }}>
+              <FaInfoCircle className="me-2" />
+              This action cannot be undone. The tool will be permanently removed.
+            </Alert>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button 
+              style={{
+                background: 'transparent',
+                color: '#94a3b8',
+                border: '1px solid #334155',
+                borderRadius: '10px',
+                padding: '0.6rem 1.5rem',
+                fontWeight: 600
+              }}
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              style={{
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '0.6rem 1.5rem',
+                fontWeight: 600
+              }}
+              onClick={handleDelete} 
+              disabled={deleting}
+            >
+              {deleting ? (
+                <><Spinner animation="border" size="sm" className="me-2" /> Deleting...</>
+              ) : (
+                'Yes, Delete'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Image Zoom Modal */}
+        <Modal 
+          show={showImageModal} 
+          onHide={() => setShowImageModal(false)} 
+          centered 
+          size="xl"
+          className="modal-dark"
+        >
+          <Modal.Header closeButton />
+          <Modal.Body className="p-0 text-center" style={{ background: '#0f172a' }}>
+            <Image 
+              src={selectedImage} 
+              fluid 
+              style={{ maxHeight: '85vh', objectFit: 'contain' }}
+            />
+          </Modal.Body>
+        </Modal>
+      </Container>
+    </div>
   );
 };
 

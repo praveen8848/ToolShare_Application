@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Form, Button, Container, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import { FaEnvelope, FaLock, FaTools, FaArrowRight } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaTools, FaArrowRight, FaLeaf, FaRupeeSign } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import NavigationBar from '../components/common/Navbar';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -18,18 +19,11 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
-    console.log('Attempting login for:', email);
-
     const result = await login(email, password);
-    
-    console.log('Login result:', result);
 
     if (result.success) {
-      toast.success('Login successful! Welcome back!');
-      // Small delay to ensure state updates
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 100);
+      toast.success('Login successful! Welcome back to ToolShare India.');
+      setTimeout(() => navigate('/dashboard'), 100);
     } else {
       setError(result.message);
       toast.error(result.message);
@@ -39,33 +33,52 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="page-content d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+    <div className="login-wrapper" style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    }}>
       
-      {/* Scoped styles for the premium inputs */}
+      {/* Dark Theme Styles */}
       <style>
         {`
+          .login-wrapper {
+            color: #e2e8f0;
+          }
+          
           .auth-card {
-            background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.8);
+            background: #1e293b;
+            border: 1px solid #334155;
             border-radius: 24px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1);
             width: 100%;
             max-width: 440px;
             padding: 3rem 2.5rem;
+            animation: slideUp 0.5s ease-out;
+          }
+          
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
           
           .auth-input-group {
-            background-color: #f1f5f9;
+            background-color: #0f172a;
             border-radius: 12px;
-            border: 1px solid transparent;
-            transition: all 0.2s ease;
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
             overflow: hidden;
           }
 
           .auth-input-group:focus-within {
-            background-color: #ffffff;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
           }
 
           .auth-input {
@@ -74,50 +87,132 @@ const LoginPage = () => {
             box-shadow: none !important;
             padding: 0.85rem 1rem;
             font-size: 0.95rem;
-            color: #0f172a;
+            color: #e2e8f0 !important;
           }
           
           .auth-input::placeholder {
-            color: #94a3b8;
+            color: #64748b;
           }
 
           .auth-icon-wrapper {
             background-color: transparent;
             border: none;
             padding-left: 1.25rem;
-            color: #94a3b8;
+            color: #64748b;
+            transition: color 0.3s ease;
           }
 
           .auth-input-group:focus-within .auth-icon-wrapper {
-            color: #3b82f6;
+            color: #60a5fa;
+          }
+
+          .btn-auth-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+
+          .btn-auth-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            color: white;
+          }
+          
+          .btn-auth-primary:disabled {
+            opacity: 0.7;
+            transform: none;
+          }
+          
+          .text-muted-custom { 
+            color: #94a3b8; 
+          }
+          
+          .brand-icon-wrapper {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border: 1px solid #334155;
+          }
+          
+          .link-gradient {
+            background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            text-decoration: none;
+          }
+          
+          .link-gradient:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+          
+          .indian-badge {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            border-radius: 100px;
+            padding: 0.5rem 1.5rem;
+            color: #60a5fa;
+            font-size: 0.85rem;
+            display: inline-block;
           }
         `}
       </style>
 
-      <Container className="d-flex justify-content-center animate-1">
+
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 76px)' }}>
         <div className="auth-card">
           
           {/* Brand Header */}
           <div className="text-center mb-5">
-            <div 
-              className="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-              style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', color: '#2563eb' }}
-            >
-              <FaTools size={28} />
+            <div className="brand-icon-wrapper mb-3">
+              <FaTools size={28} color="white" />
             </div>
-            <h3 className="fw-extrabold text-dark mb-1" style={{ letterSpacing: '-0.5px' }}>Welcome back</h3>
-            <p className="text-muted-modern small">Enter your credentials to access your account.</p>
+            <h3 className="fw-bold mb-2" style={{ 
+              background: 'linear-gradient(135deg, #60a5fa 0%, #34d399 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontSize: '1.8rem'
+            }}>
+              Welcome Back
+            </h3>
+            <p className="text-muted-custom small mb-3">Sign in to access your ToolShare account</p>
           </div>
           
           {error && (
-            <Alert variant="danger" className="rounded-3 border-0 small bg-danger bg-opacity-10 text-danger fw-medium d-flex align-items-center">
-              {error}
+            <Alert 
+              className="rounded-3 border-0 small d-flex align-items-center" 
+              style={{ 
+                backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                color: '#fca5a5',
+                border: '1px solid rgba(239, 68, 68, 0.3)'
+              }}
+            >
+              <span>⚠️ {error}</span>
             </Alert>
           )}
           
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-4">
-              <Form.Label className="fw-semibold text-dark small mb-2">Email address</Form.Label>
+              <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
+                Email Address
+              </Form.Label>
               <InputGroup className="auth-input-group">
                 <InputGroup.Text className="auth-icon-wrapper">
                   <FaEnvelope />
@@ -125,7 +220,7 @@ const LoginPage = () => {
                 <Form.Control
                   type="email"
                   className="auth-input"
-                  placeholder="name@example.com"
+                  placeholder="pankaj@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -136,8 +231,9 @@ const LoginPage = () => {
 
             <Form.Group className="mb-4">
               <div className="d-flex justify-content-between align-items-center mb-2">
-                <Form.Label className="fw-semibold text-dark small mb-0">Password</Form.Label>
-                {/* Optional: You can add a 'Forgot Password?' link here later */}
+                <Form.Label className="fw-semibold small mb-0" style={{ color: '#cbd5e1' }}>
+                  Password
+                </Form.Label>
               </div>
               <InputGroup className="auth-input-group">
                 <InputGroup.Text className="auth-icon-wrapper">
@@ -155,26 +251,26 @@ const LoginPage = () => {
             </Form.Group>
 
             <Button
-              variant="primary"
               type="submit"
-              className="btn-primary-modern w-100 py-3 mt-2 d-flex align-items-center justify-content-center gap-2"
+              className="btn-auth-primary w-100 d-flex align-items-center justify-content-center gap-2"
               disabled={loading}
               style={{ fontSize: '1rem' }}
             >
               {loading ? (
                 <><Spinner animation="border" size="sm" /> Signing in...</>
               ) : (
-                <>Sign in <FaArrowRight size={14} /></>
+                <>Sign In <FaArrowRight size={14} /></>
               )}
             </Button>
           </Form>
           
           <div className="text-center mt-5">
-            <span className="text-muted-modern small">Don't have an account? </span>
-            <Link to="/register" className="text-decoration-none fw-bold" style={{ color: '#2563eb' }}>
-              Create an account
+            <span className="text-muted-custom small">New to ToolShare ? </span>
+            <Link to="/register" className="link-gradient">
+              Create Free Account
             </Link>
           </div>
+          
 
         </div>
       </Container>

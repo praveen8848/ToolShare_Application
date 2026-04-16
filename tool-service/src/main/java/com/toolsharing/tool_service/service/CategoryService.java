@@ -24,8 +24,8 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    // FIXED: Explicitly defined key as 'all' to prevent collision with getCategoryById keys
-    @Cacheable(value = "categories", key = "'all'", unless = "#result == null || #result.isEmpty()")
+    // FIX: Removed .isEmpty() check to cache empty lists and prevent DB spam on empty state
+    @Cacheable(value = "categories", key = "'all'", unless = "#result == null")
     public List<CategoryResponse> getAllCategories() {
         logger.info("Fetching all categories from DATABASE (cache miss)");
         List<Category> categories = categoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
@@ -34,7 +34,8 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    @Cacheable(value = "categories", key = "#id", unless = "#result == null")
+    // FIX: Added .toString() to explicitly match StringRedisSerializer expectations
+    @Cacheable(value = "categories", key = "#id.toString()", unless = "#result == null")
     public CategoryResponse getCategoryById(Long id) {
         logger.info("Fetching category by id {} from DATABASE (cache miss)", id);
         Category category = categoryRepository.findById(id)
@@ -51,7 +52,7 @@ public class CategoryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category name already exists");
         }
 
-        // FIXED: Ensure the parent category actually exists before saving
+        // Ensure the parent category actually exists before saving
         if (category.getParentId() != null && !categoryRepository.existsById(category.getParentId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specified parent category does not exist");
         }
@@ -76,11 +77,11 @@ public class CategoryService {
         }
 
         if (categoryDetails.getParentId() != null) {
-            // FIXED: Prevent a category from being its own parent (Circular Reference)
+            // Prevent a category from being its own parent (Circular Reference)
             if (categoryDetails.getParentId().equals(id)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A category cannot be its own parent");
             }
-            // FIXED: Ensure the new parent category actually exists
+            // Ensure the new parent category actually exists
             if (!categoryRepository.existsById(categoryDetails.getParentId())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specified parent category does not exist");
             }

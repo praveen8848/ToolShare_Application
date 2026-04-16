@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-// @EnableCaching // Uncomment this when you are ready to turn Redis back on!
+@EnableCaching
 public class RedisConfig {
 
     @Bean

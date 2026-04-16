@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
@@ -14,124 +15,58 @@ import AddToolPage from '../pages/AddToolPage';
 import EditToolPage from '../pages/EditToolPage';
 import CategoryManagementPage from '../pages/CategoryManagementPage';
 import ProfilePage from '../pages/ProfilePage';
+import LandingPage from '../pages/LandingPage';
 import ToolViewPage from '../pages/ToolViewPage';
-import VerifyEmailPage from '../pages/VerifyEmailPage';
+// import VerifyEmailPage from '../pages/VerifyEmailPage';
+
 const AppRoutes = () => {
+  const isAuthenticated = !!localStorage.getItem("token"); // simple check
+
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      
-      {/* Protected Routes */}
+
+      {/* ✅ ONLY PUBLIC ROUTE */}
+      <Route path="/landing" element={<LandingPage />} />
+
+      {/* 🔒 LOGIN & REGISTER (blocked if already logged in) */}
       <Route
-        path="/dashboard"
+        path="/login"
         element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
+          isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />
         }
       />
       <Route
-        path="/browse"
+        path="/register"
         element={
-          <ProtectedRoute>
-            <BrowseToolsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tools/:id"
-        element={
-          <ProtectedRoute>
-            <ToolDetailsPage />
-          </ProtectedRoute>
+          isAuthenticated ? <Navigate to="/dashboard" /> : <RegisterPage />
         }
       />
 
+      {/* 🔒 ALL PROTECTED ROUTES */}
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/browse" element={<ProtectedRoute><BrowseToolsPage /></ProtectedRoute>} />
+      <Route path="/tools/:id" element={<ProtectedRoute><ToolDetailsPage /></ProtectedRoute>} />
+      <Route path="/my-bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
+      <Route path="/return/:id" element={<ProtectedRoute><ReturnPage /></ProtectedRoute>} />
+      <Route path="/owner-dashboard" element={<ProtectedRoute><OwnerDashboardPage /></ProtectedRoute>} />
+      <Route path="/my-tools" element={<ProtectedRoute><MyToolsPage /></ProtectedRoute>} />
+      <Route path="/add-tool" element={<ProtectedRoute><AddToolPage /></ProtectedRoute>} />
+      <Route path="/edit-tool/:id" element={<ProtectedRoute><EditToolPage /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/admin/categories" element={<ProtectedRoute><CategoryManagementPage /></ProtectedRoute>} />
+      <Route path="/tools/view/:id" element={<ProtectedRoute><ToolViewPage /></ProtectedRoute>} />
+
+      {/* 🔁 ROOT LOGIC */}
       <Route
-        path="/my-bookings"
+        path="/"
         element={
-          <ProtectedRoute>
-            <MyBookingsPage />
-          </ProtectedRoute>
+          isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/landing" />
         }
       />
-      <Route
-        path="/return/:id"
-        element={
-          <ProtectedRoute>
-            <ReturnPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/owner-dashboard"
-        element={
-          <ProtectedRoute>
-            <OwnerDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-      path="/my-tools"
-      element={
-        <ProtectedRoute>
-          <MyToolsPage />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/add-tool"
-      element={
-        <ProtectedRoute>
-          <AddToolPage />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/edit-tool/:id"
-      element={
-        <ProtectedRoute>
-          <EditToolPage />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/profile"
-      element={
-        <ProtectedRoute>
-          <ProfilePage />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/categories"
-      element={
-        <ProtectedRoute>
-          <CategoryManagementPage />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/tools/view/:id"
-      element={
-        <ProtectedRoute>
-          <ToolViewPage />
-        </ProtectedRoute>
-      }
-    />
-    {/* <Route
-     path="/verify-email" 
-     element={
-     <VerifyEmailPage
-      />}
-    /> */}
-      {/* Redirect root to dashboard */}
-      <Route path="/" element={<Navigate to="/dashboard" />} />
-      
-      {/* Catch all - redirect to home */}
-      <Route path="*" element={<Navigate to="/" />} />
+
+      {/* ❌ FALLBACK */}
+      <Route path="*" element={<Navigate to="/landing" />} />
+
     </Routes>
   );
 };

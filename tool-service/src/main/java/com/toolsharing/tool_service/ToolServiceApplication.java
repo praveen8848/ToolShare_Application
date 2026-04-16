@@ -10,7 +10,7 @@ import org.springframework.cache.annotation.EnableCaching;
 @SpringBootApplication
 @EnableFeignClients
 @EnableDiscoveryClient
-//@EnableCaching
+@EnableCaching
 public class ToolServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ToolServiceApplication.class, args);

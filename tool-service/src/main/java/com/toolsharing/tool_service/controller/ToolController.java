@@ -49,7 +49,13 @@ public class ToolController {
     @GetMapping("/{id}")
     public ResponseEntity<ToolResponse> getToolById(@PathVariable Long id) {
         logger.info("Fetching tool with id: {}", id);
+
+        // ✅ Increment views separately (write operation)
+        toolService.incrementViews(id);
+
+        // ✅ Fetch tool (cached + read-only safe)
         ToolResponse tool = toolService.getToolById(id);
+
         return ResponseEntity.ok(tool);
     }
 
