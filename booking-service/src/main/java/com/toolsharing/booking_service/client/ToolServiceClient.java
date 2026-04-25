@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@FeignClient(name = "tool-service", url = "${tool.service.url:http://localhost:8083}")
+@FeignClient(name = "tool-service")
 public interface ToolServiceClient {
 
     @GetMapping("/api/tools/{id}")

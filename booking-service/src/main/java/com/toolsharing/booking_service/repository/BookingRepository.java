@@ -48,4 +48,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find confirmed booking for specific item and dates (exists check)
     boolean existsByItemIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long itemId, BookingStatus status, LocalDate endDate, LocalDate startDate);
+
+    List<Booking> findByItemIdIn(List<Long> itemIds);
 }

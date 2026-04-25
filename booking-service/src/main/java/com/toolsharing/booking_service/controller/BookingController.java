@@ -4,6 +4,8 @@ import com.toolsharing.booking_service.dto.request.ApproveBookingRequest;
 import com.toolsharing.booking_service.dto.request.CreateBookingRequest;
 import com.toolsharing.booking_service.dto.response.AvailabilityResponse;
 import com.toolsharing.booking_service.dto.response.BookingResponse;
+import com.toolsharing.booking_service.dto.response.DashboardMetricsResponse; // ADDED IMPORT
+import com.toolsharing.booking_service.dto.response.PublicOwnerProfileResponse;
 import com.toolsharing.booking_service.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -87,7 +89,6 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-
     // Reject a booking (owner action)
     @PutMapping("/{bookingId}/reject")
     public ResponseEntity<BookingResponse> rejectBooking(
@@ -152,6 +153,7 @@ public class BookingController {
         BookingResponse response = bookingService.confirmReturn(bookingId, ownerId);
         return ResponseEntity.ok(response);
     }
+
     @GetMapping("/return-requests")
     public ResponseEntity<List<BookingResponse>> getReturnRequests(
             @RequestHeader("X-User-Id") Long ownerId) {
@@ -160,6 +162,7 @@ public class BookingController {
         List<BookingResponse> bookings = bookingService.getReturnRequestsForOwner(ownerId);
         return ResponseEntity.ok(bookings);
     }
+
     // Delete a booking (only for rejected/completed/cancelled)
     @DeleteMapping("/{bookingId}")
     public ResponseEntity<Void> deleteBooking(
@@ -171,4 +174,23 @@ public class BookingController {
         return ResponseEntity.noContent().build();
     }
 
+    // NEW: Get Dashboard Metrics for the Owner
+    @GetMapping("/owner-metrics")
+    public ResponseEntity<DashboardMetricsResponse> getOwnerMetrics(
+            @RequestHeader("X-User-Id") Long ownerId) {
+
+        logger.info("Fetching dashboard metrics for owner: {}", ownerId);
+        DashboardMetricsResponse response = bookingService.getOwnerDashboardMetrics(ownerId);
+        return ResponseEntity.ok(response);
+    }
+
+    // NEW: Get Public Profile for Borrowers to view
+    @GetMapping("/public/owner-profile/{ownerId}")
+    public ResponseEntity<PublicOwnerProfileResponse> getPublicOwnerProfile(
+            @PathVariable Long ownerId) {
+
+        logger.info("Public profile requested for owner: {}", ownerId);
+        PublicOwnerProfileResponse response = bookingService.getPublicOwnerProfile(ownerId);
+        return ResponseEntity.ok(response);
+    }
 }

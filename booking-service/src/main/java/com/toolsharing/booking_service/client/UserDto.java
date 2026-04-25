@@ -1,5 +1,7 @@
 package com.toolsharing.booking_service.client;
 
+import java.time.LocalDateTime;
+
 public class UserDto {
     private Long userId;
     private String email;
@@ -7,17 +9,27 @@ public class UserDto {
     private String phoneNumber;
     private String accountStatus;
     private Double trustScore;
+    private LocalDateTime createdAt;
 
     // Constructors
     public UserDto() {}
 
-    public UserDto(Long userId, String email, String name, String phoneNumber, String accountStatus, Double trustScore) {
+    public UserDto(Long userId, String email, String name, String phoneNumber, String accountStatus, Double trustScore,LocalDateTime createdAt) {
         this.userId = userId;
         this.email = email;
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.accountStatus = accountStatus;
         this.trustScore = trustScore;
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     // Getters and Setters

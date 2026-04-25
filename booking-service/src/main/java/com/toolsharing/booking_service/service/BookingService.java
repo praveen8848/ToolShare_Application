@@ -7,10 +7,7 @@ import com.toolsharing.booking_service.client.UserServiceClient;
 import com.toolsharing.booking_service.dto.NotificationEvent;
 import com.toolsharing.booking_service.dto.request.ApproveBookingRequest;
 import com.toolsharing.booking_service.dto.request.CreateBookingRequest;
-import com.toolsharing.booking_service.dto.response.AvailabilityResponse;
-import com.toolsharing.booking_service.dto.response.BookingResponse;
-import com.toolsharing.booking_service.dto.response.ConflictBooking;
-import com.toolsharing.booking_service.dto.response.SuggestedDatesResponse;
+import com.toolsharing.booking_service.dto.response.*;
 import com.toolsharing.booking_service.entity.Booking;
 import com.toolsharing.booking_service.entity.BookingStatus;
 import com.toolsharing.booking_service.repository.BookingRepository;
@@ -639,6 +636,106 @@ public class BookingService {
                 .createdAt(booking.getCreatedAt())
                 .approvedAt(booking.getApprovedAt())
                 .completedAt(booking.getCompletedAt())
+                .build();
+    }
+
+
+    public DashboardMetricsResponse getOwnerDashboardMetrics(Long ownerId) {
+        logger.info("Calculating dashboard metrics for owner: {}", ownerId);
+
+        List<ToolDto> ownerTools;
+        try {
+            ownerTools = toolServiceClient.getToolsByOwner(ownerId);
+        } catch (Exception e) {
+            logger.error("Failed to fetch tools for owner: {}", ownerId, e);
+            ownerTools = new ArrayList<>();
+        }
+
+        if (ownerTools.isEmpty()) {
+            return DashboardMetricsResponse.builder()
+                    .totalEarnings(BigDecimal.ZERO)
+                    .totalRentals(0)
+                    .successRate(100.0)
+                    .pendingApprovals(0)
+                    .build();
+        }
+
+        List<Long> toolIds = ownerTools.stream()
+                .map(ToolDto::getId)
+                .collect(Collectors.toList());
+
+        List<Booking> ownerBookings = bookingRepository.findByItemIdIn(toolIds);
+
+        // Track Earnings via BigDecimal
+        BigDecimal totalEarnings = BigDecimal.ZERO;
+        int completedRentals = 0;
+        int rejectedRentals = 0;
+        int pendingApprovals = 0;
+
+        for (Booking b : ownerBookings) {
+            if (b.getStatus() == BookingStatus.COMPLETED) {
+                completedRentals++;
+
+                // Add the booking's total amount to the owner's earnings
+                if (b.getTotalAmount() != null) {
+                    totalEarnings = totalEarnings.add(b.getTotalAmount());
+                }
+
+            } else if (b.getStatus() == BookingStatus.REJECTED) {
+                rejectedRentals++;
+            } else if (b.getStatus() == BookingStatus.PENDING) {
+                pendingApprovals++;
+            }
+        }
+
+        int totalDecisions = completedRentals + rejectedRentals;
+        double successRate = 100.0;
+
+        if (totalDecisions > 0) {
+            successRate = ((double) completedRentals / totalDecisions) * 100.0;
+            successRate = Math.round(successRate * 10.0) / 10.0;
+        }
+
+        return DashboardMetricsResponse.builder()
+                .totalEarnings(totalEarnings)
+                .totalRentals(completedRentals)
+                .successRate(successRate)
+                .pendingApprovals(pendingApprovals)
+                .build();
+    }
+    public PublicOwnerProfileResponse getPublicOwnerProfile(Long ownerId) {
+        logger.info("Fetching public profile for owner: {}", ownerId);
+
+        // 1. Fetch the user's basic info (Name, Join Date)
+        UserDto owner;
+        try {
+            owner = userServiceClient.getUserById(ownerId);
+        } catch (Exception e) {
+            logger.error("Failed to fetch user details for public profile: {}", ownerId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found");
+        }
+
+        // 2. Fetch their tools to count how many they have listed
+        List<ToolDto> ownerTools;
+        try {
+            ownerTools = toolServiceClient.getToolsByOwner(ownerId);
+        } catch (Exception e) {
+            logger.warn("Failed to fetch tools for owner: {}", ownerId);
+            ownerTools = new java.util.ArrayList<>();
+        }
+
+        // 3. Fetch their success rate (Reusing our existing math!)
+        DashboardMetricsResponse metrics = getOwnerDashboardMetrics(ownerId);
+
+        // Ensure we handle missing createdAt gracefully just in case
+        LocalDateTime memberSince = owner.getCreatedAt() != null ?
+                owner.getCreatedAt() : LocalDateTime.now();
+
+        return PublicOwnerProfileResponse.builder()
+                .name(owner.getName())
+                .memberSince(memberSince)
+                .successRate(metrics.getSuccessRate())
+                .totalTools(ownerTools.size())
                 .build();
     }
 }
