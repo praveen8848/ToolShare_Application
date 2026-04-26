@@ -17,7 +17,8 @@ import CategoryManagementPage from '../pages/CategoryManagementPage';
 import ProfilePage from '../pages/ProfilePage';
 import LandingPage from '../pages/LandingPage';
 import ToolViewPage from '../pages/ToolViewPage';
-// import VerifyEmailPage from '../pages/VerifyEmailPage';
+
+import OwnerProfile from '../pages/OwnerProfile'; 
 
 const AppRoutes = () => {
   const isAuthenticated = !!localStorage.getItem("token"); // simple check
@@ -55,6 +56,9 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/admin/categories" element={<ProtectedRoute><CategoryManagementPage /></ProtectedRoute>} />
       <Route path="/tools/view/:id" element={<ProtectedRoute><ToolViewPage /></ProtectedRoute>} />
+      
+      {/* FIX 2: Wrapped in ProtectedRoute so you keep your Navbar/Auth context! */}
+      <Route path="/owner/:ownerId" element={<ProtectedRoute><OwnerProfile /></ProtectedRoute>} />
 
       {/* 🔁 ROOT LOGIC */}
       <Route

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Button, Container, Alert, InputGroup, Spinner, Row, Col } from 'react-bootstrap';
+import { Form, Button, Alert, InputGroup, Spinner, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaEnvelope, FaLock, FaUserPlus, FaArrowRight, FaRupeeSign, FaLeaf, FaPhoneAlt } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaUserPlus, FaArrowRight, FaPhoneAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import NavigationBar from '../components/common/Navbar';
 
@@ -32,7 +32,7 @@ const RegisterPage = () => {
     const result = await register(name, email, password, phone);
     
     if (result.success) {
-      toast.success('🎉 Welcome to ToolShare India! Your account has been created.');
+      toast.success('🎉 Welcome to ToolShare! Your account has been created.');
       setTimeout(() => navigate('/login'), 100);
     } else {
       setError(result.message);
@@ -43,17 +43,25 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="register-wrapper" style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    }}>
+    <div className="register-wrapper">
       
       {/* Dark Theme Styles */}
       <style>
         {`
           .register-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: #e2e8f0;
+            padding-top: 76px; /* Fixed: Prevent navbar overlap */
+          }
+          
+          .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 76px);
+            padding: 1.5rem 1rem;
           }
           
           .auth-card {
@@ -62,9 +70,10 @@ const RegisterPage = () => {
             border-radius: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1);
             width: 100%;
-            max-width: 540px;
-            padding: 2.5rem 2.5rem;
+            max-width: 520px;
+            padding: 2.5rem 2rem;
             animation: slideUp 0.5s ease-out;
+            margin: 0 auto;
           }
           
           @keyframes slideUp {
@@ -172,27 +181,41 @@ const RegisterPage = () => {
             background-clip: text;
           }
           
-          .indian-badge {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+          .alert-error {
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            color: #fca5a5 !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+            border-radius: 12px !important;
+          }
+          
+          .benefits-section {
+            background: #0f172a;
             border: 1px solid #334155;
-            border-radius: 100px;
-            padding: 0.5rem 1.5rem;
-            color: #60a5fa;
-            font-size: 0.85rem;
-            display: inline-block;
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
           }
           
           .benefit-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #94a3b8;
+            gap: 10px;
+            color: #cbd5e1;
             font-size: 0.85rem;
+            padding: 0.35rem 0;
+          }
+          
+          .benefit-item svg {
+            color: #34d399;
+            font-size: 14px;
           }
         `}
       </style>
 
-      <Container className="d-flex justify-content-center align-items-center py-4" style={{ minHeight: 'calc(100vh - 76px)' }}>
+      {/* Navigation Bar */}
+      <NavigationBar />
+
+      <div className="auth-container">
         <div className="auth-card">
           
           {/* Brand Header */}
@@ -207,28 +230,20 @@ const RegisterPage = () => {
               backgroundClip: 'text',
               fontSize: '1.8rem'
             }}>
-              Join ToolShare Community
+              Join ToolShare
             </h3>
-            <p className="text-muted-custom small mb-3">Start borrowing and lending tools in your community</p>
-        
+            <p className="text-muted-custom small mb-0">Start borrowing and lending tools in your community</p>
           </div>
           
           {error && (
-            <Alert 
-              className="rounded-3 border-0 small d-flex align-items-center mb-3" 
-              style={{ 
-                backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                color: '#fca5a5',
-                border: '1px solid rgba(239, 68, 68, 0.3)'
-              }}
-            >
+            <Alert className="alert-error small d-flex align-items-center py-2 mb-4">
               <span>⚠️ {error}</span>
             </Alert>
           )}
           
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold small mb-1" style={{ color: '#cbd5e1' }}>
+              <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
                 Full Name
               </Form.Label>
               <InputGroup className="auth-input-group">
@@ -247,7 +262,7 @@ const RegisterPage = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold small mb-1" style={{ color: '#cbd5e1' }}>
+              <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
                 Email Address
               </Form.Label>
               <InputGroup className="auth-input-group">
@@ -265,30 +280,10 @@ const RegisterPage = () => {
               </InputGroup>
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label className="fw-semibold small mb-1" style={{ color: '#cbd5e1' }}>
-                Mobile Number
-              </Form.Label>
-              <InputGroup className="auth-input-group">
-                <InputGroup.Text className="auth-icon-wrapper">
-                  <FaPhoneAlt />
-                </InputGroup.Text>
-                <Form.Control
-                  type="tel"
-                  className="auth-input"
-                  placeholder="9876543210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  maxLength="10"
-                  required
-                />
-              </InputGroup>
-            </Form.Group>
-
             <Row className="g-2">
               <Col sm={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold small mb-1" style={{ color: '#cbd5e1' }}>
+                  <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
                     Password
                   </Form.Label>
                   <InputGroup className="auth-input-group">
@@ -308,8 +303,8 @@ const RegisterPage = () => {
               </Col>
               <Col sm={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label className="fw-semibold small mb-1" style={{ color: '#cbd5e1' }}>
-                    Confirm
+                  <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
+                    Confirm Password
                   </Form.Label>
                   <InputGroup className="auth-input-group">
                     <InputGroup.Text className="auth-icon-wrapper">
@@ -328,7 +323,21 @@ const RegisterPage = () => {
               </Col>
             </Row>
 
-            
+            {/* Benefits Section */}
+            <div className="benefits-section">
+              <div className="benefit-item">
+                <FaUserPlus size={12} />
+                <span>Access tools across India</span>
+              </div>
+              <div className="benefit-item">
+                <FaUserPlus size={12} />
+                <span>Earn by sharing your idle tools</span>
+              </div>
+              <div className="benefit-item">
+                <FaUserPlus size={12} />
+                <span> Save capital by using tools from verified community</span>
+              </div>
+            </div>
 
             <Button
               type="submit"
@@ -353,7 +362,7 @@ const RegisterPage = () => {
           
 
         </div>
-      </Container>
+      </div>
     </div>
   );
 };

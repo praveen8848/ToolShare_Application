@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Form, Button, Container, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-import { FaEnvelope, FaLock, FaTools, FaArrowRight, FaLeaf, FaRupeeSign } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaTools, FaArrowRight } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import NavigationBar from '../components/common/Navbar';
 
@@ -22,7 +22,7 @@ const LoginPage = () => {
     const result = await login(email, password);
 
     if (result.success) {
-      toast.success('Login successful! Welcome back to ToolShare India.');
+      toast.success('Login successful! Welcome back to ToolShare.');
       setTimeout(() => navigate('/dashboard'), 100);
     } else {
       setError(result.message);
@@ -33,17 +33,25 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="login-wrapper" style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    }}>
+    <div className="login-wrapper">
       
       {/* Dark Theme Styles */}
       <style>
         {`
           .login-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: #e2e8f0;
+            padding-top: 76px; /* Fixed: Prevent navbar overlap */
+          }
+          
+          .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 76px);
+            padding: 1.5rem 1rem;
           }
           
           .auth-card {
@@ -53,8 +61,9 @@ const LoginPage = () => {
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.1);
             width: 100%;
             max-width: 440px;
-            padding: 3rem 2.5rem;
+            padding: 2.5rem 2rem;
             animation: slideUp 0.5s ease-out;
+            margin: 0 auto;
           }
           
           @keyframes slideUp {
@@ -162,24 +171,23 @@ const LoginPage = () => {
             background-clip: text;
           }
           
-          .indian-badge {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #334155;
-            border-radius: 100px;
-            padding: 0.5rem 1.5rem;
-            color: #60a5fa;
-            font-size: 0.85rem;
-            display: inline-block;
+          .alert-error {
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            color: #fca5a5 !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+            border-radius: 12px !important;
           }
         `}
       </style>
 
+      {/* Navigation Bar */}
+      <NavigationBar />
 
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 76px)' }}>
+      <div className="auth-container">
         <div className="auth-card">
           
           {/* Brand Header */}
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <div className="brand-icon-wrapper mb-3">
               <FaTools size={28} color="white" />
             </div>
@@ -192,18 +200,11 @@ const LoginPage = () => {
             }}>
               Welcome Back
             </h3>
-            <p className="text-muted-custom small mb-3">Sign in to access your ToolShare account</p>
+            <p className="text-muted-custom small mb-0">Sign in to access your ToolShare account</p>
           </div>
           
           {error && (
-            <Alert 
-              className="rounded-3 border-0 small d-flex align-items-center" 
-              style={{ 
-                backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-                color: '#fca5a5',
-                border: '1px solid rgba(239, 68, 68, 0.3)'
-              }}
-            >
+            <Alert className="alert-error small d-flex align-items-center py-2 mb-4">
               <span>⚠️ {error}</span>
             </Alert>
           )}
@@ -230,11 +231,9 @@ const LoginPage = () => {
             </Form.Group>
 
             <Form.Group className="mb-4">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <Form.Label className="fw-semibold small mb-0" style={{ color: '#cbd5e1' }}>
-                  Password
-                </Form.Label>
-              </div>
+              <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
+                Password
+              </Form.Label>
               <InputGroup className="auth-input-group">
                 <InputGroup.Text className="auth-icon-wrapper">
                   <FaLock />
@@ -264,16 +263,15 @@ const LoginPage = () => {
             </Button>
           </Form>
           
-          <div className="text-center mt-5">
-            <span className="text-muted-custom small">New to ToolShare ? </span>
+          <div className="text-center mt-4">
+            <span className="text-muted-custom small">New to ToolShare? </span>
             <Link to="/register" className="link-gradient">
               Create Free Account
             </Link>
           </div>
-          
 
         </div>
-      </Container>
+      </div>
     </div>
   );
 };

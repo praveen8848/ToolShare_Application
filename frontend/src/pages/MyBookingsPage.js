@@ -306,6 +306,7 @@ const MyBookingsPage = () => {
             .bookings-wrapper {
               background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
               min-height: 100vh;
+              padding-top: 76px;
               font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
               color: #e2e8f0;
               padding-bottom: 3rem;

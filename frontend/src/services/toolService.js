@@ -66,7 +66,7 @@ const toolService = {
     return response.data;
   },
 
-  // Create new tool
+  // List new tool
   createTool: async (toolData) => {
     const response = await api.post('/api/tools', toolData);
     return response.data;

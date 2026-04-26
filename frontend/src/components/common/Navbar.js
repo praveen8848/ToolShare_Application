@@ -8,7 +8,8 @@ import {
   FaTachometerAlt, 
   FaSearch, 
   FaCalendarAlt, 
-  FaBoxes
+  FaBoxes,
+  FaPlus
 } from 'react-icons/fa';
 
 const NavbarAvatar = ({ name, size = 36 }) => {
@@ -51,7 +52,7 @@ const NavigationBar = () => {
       <style>
         {`
           .toolshare-navbar {
-            background: #0f172a !important; /* Seamless match with Landing Page */
+            background: #0f172a !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             padding: 0.8rem 0;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -63,13 +64,11 @@ const NavigationBar = () => {
             z-index: 1030;
           }
 
-          /* Lock the inner width so it never shifts between pages */
           .navbar-locked-container {
             max-width: 1320px !important;
             margin: 0 auto;
           }
           
-          /* Brand Styling */
           .navbar-brand-custom {
             display: flex;
             align-items: center;
@@ -96,7 +95,6 @@ const NavigationBar = () => {
             letter-spacing: -0.03em;
           }
           
-          /* Navigation Links */
           .nav-link-custom {
             color: #94a3b8 !important;
             font-weight: 500;
@@ -120,12 +118,33 @@ const NavigationBar = () => {
             font-weight: 600;
           }
           
+          /* List Tool Button - Special Styling */
+          .nav-link-list-tool {
+            color: #34d399 !important;
+            font-weight: 600;
+            padding: 0.5rem 1.25rem !important;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            margin-left: 0.25rem;
+          }
+          
+          .nav-link-list-tool:hover {
+            background: rgba(16, 185, 129, 0.2) !important;
+            color: #6ee7b7 !important;
+            border-color: rgba(16, 185, 129, 0.4);
+          }
+          
           .nav-icon {
             font-size: 1rem;
             opacity: 0.8;
           }
           
-          /* User Profile Pill */
           .user-profile-btn {
             display: flex;
             align-items: center;
@@ -147,7 +166,6 @@ const NavigationBar = () => {
             color: #f8fafc !important;
           }
           
-          /* Refined Buttons */
           .btn-logout-dark {
             background: transparent;
             color: #94a3b8;
@@ -157,6 +175,9 @@ const NavigationBar = () => {
             font-weight: 500;
             font-size: 0.95rem;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
           }
           
           .btn-logout-dark:hover {
@@ -197,7 +218,6 @@ const NavigationBar = () => {
             color: white;
           }
           
-          /* Mobile Toggler */
           .navbar-toggler-custom {
             border: 1px solid rgba(51, 65, 85, 0.5);
             padding: 0.4rem 0.6rem;
@@ -214,19 +234,38 @@ const NavigationBar = () => {
           .navbar-toggler-icon {
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(248, 250, 252, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
           }
+          
+          /* Divider */
+          .navbar-divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(51, 65, 85, 0.8);
+          }
+          
+          /* Responsive */
+          @media (max-width: 991px) {
+            .nav-link-list-tool {
+              margin-left: 0;
+              margin-top: 0.5rem;
+              justify-content: center;
+            }
+            
+            .navbar-divider {
+              display: none;
+            }
+          }
         `}
       </style>
 
       <Navbar className="toolshare-navbar" expand="lg">
-        {/* CHANGED: Using fluid container with locked max-width class */}
         <Container fluid className="navbar-locked-container px-4">
           
           {/* Brand */}
           <Navbar.Brand 
-              as={Link} 
-              to={isAuthenticated ? "/dashboard" : "/"} 
-              className="navbar-brand-custom"
-            >
+            as={Link} 
+            to={isAuthenticated ? "/dashboard" : "/"} 
+            className="navbar-brand-custom"
+          >
             <div className="brand-icon-wrapper">
               <FaTools size={18} />
             </div>
@@ -238,12 +277,18 @@ const NavigationBar = () => {
           <Navbar.Collapse id="basic-navbar-nav">
             {isAuthenticated ? (
               <>
-                <Nav className="ms-auto me-4 align-items-lg-center gap-2">
+                <Nav className="ms-auto me-3 align-items-lg-center gap-1">
                   <Nav.Link as={Link} to="/browse" className={`nav-link-custom ${isActive('/browse') ? 'active' : ''}`}>
-                    <FaSearch className="nav-icon" /> Browse Tools
+                    <FaSearch className="nav-icon" /> Browse
                   </Nav.Link>
+                  
+                  {/* NEW: List Tool Button */}
+                  <Nav.Link as={Link} to="/add-tool" className="nav-link-list-tool">
+                    <FaPlus className="nav-icon" /> List Tool
+                  </Nav.Link>
+                  
                   <Nav.Link as={Link} to="/my-bookings" className={`nav-link-custom ${isActive('/my-bookings') ? 'active' : ''}`}>
-                    <FaCalendarAlt className="nav-icon" /> My Bookings
+                    <FaCalendarAlt className="nav-icon" /> Bookings
                   </Nav.Link>
                   <Nav.Link as={Link} to="/my-tools" className={`nav-link-custom ${isActive('/my-tools') ? 'active' : ''}`}>
                     <FaBoxes className="nav-icon" /> My Tools
@@ -261,11 +306,16 @@ const NavigationBar = () => {
                     </span>
                   </Link>
                   
-                  <div className="d-none d-lg-block" style={{ width: '1px', height: '24px', background: 'rgba(51, 65, 85, 0.8)' }}></div>
+                  <div className="navbar-divider d-none d-lg-block"></div>
                   
-                  <Button variant="link" onClick={handleLogout} className="btn-logout-dark d-flex align-items-center gap-2 text-decoration-none">
+                  {/* UPDATED: Logout with text instead of just icon */}
+                  <Button 
+                    variant="link" 
+                    onClick={handleLogout} 
+                    className="btn-logout-dark text-decoration-none"
+                  >
                     <FaSignOutAlt size={16} />
-                    <span className="d-lg-none">Logout</span>
+                    <span>Logout</span>
                   </Button>
                 </Nav>
               </>
@@ -275,7 +325,7 @@ const NavigationBar = () => {
                   <FaSearch className="nav-icon" /> Browse Tools
                 </Nav.Link>
                 
-                <div className="d-none d-lg-block" style={{ width: '1px', height: '24px', background: 'rgba(51, 65, 85, 0.8)' }}></div>
+                <div className="navbar-divider d-none d-lg-block"></div>
                 
                 <Link to="/login" className="btn-login-dark">Log in</Link>
                 <Link to="/register" className="btn-signup-dark">Get Started</Link>

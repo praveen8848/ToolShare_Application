@@ -4,7 +4,8 @@ import {
   FaStar, FaMapMarkerAlt, FaCalendarAlt, FaEdit, FaTrash, 
   FaRupeeSign, FaUser, FaTag, FaEye, FaClock 
 } from 'react-icons/fa';
-import { useNavigate, useLocation } from 'react-router-dom';
+// FIX 1: Added Link to the imports
+import { useNavigate, useLocation, Link } from 'react-router-dom'; 
 import { formatCurrency } from '../../utils/formatters';
 import toolService from '../../services/toolService';
 import { toast } from 'react-toastify';
@@ -362,7 +363,22 @@ const ToolCard = ({ tool, isOwnerView = false, onDelete }) => {
             <span style={{ color: '#64748b' }}>•</span>
             <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <FaUser size={12} />
-              {tool.ownerName || 'Unknown Owner'}
+              
+              {/* FIX 2: Wrapped the owner name in a Link with hover styling! */}
+              {tool.ownerId && !isOwnerView ? (
+                <Link 
+                  to={`/owner/${tool.ownerId}`} 
+                  style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: '600', transition: 'all 0.2s ease' }}
+                  onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                  onClick={(e) => e.stopPropagation()} // Prevents the card's view details click
+                >
+                  {tool.ownerName || 'Unknown Owner'}
+                </Link>
+              ) : (
+                <span>{tool.ownerName || 'Unknown Owner'}</span>
+              )}
+
             </span>
           </div>
           
