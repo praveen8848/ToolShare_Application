@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # ==========================================
-  # DATABASES
+  # 1. INFRASTRUCTURE & DATABASES
   # ==========================================
   postgres-auth:
     image: postgres:16
@@ -29,7 +29,6 @@ services:
       - user_postgres_data:/var/lib/postgresql/data
 
   postgres-tool:
-    # Changed from postgres:16
     image: postgis/postgis:16-3.4
     container_name: toolsharing-tool-postgres
     environment:
@@ -39,7 +38,6 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      # Your data is safe here
       - tool_postgres_data:/var/lib/postgresql/data
 
   postgres-booking:
@@ -54,9 +52,6 @@ services:
     volumes:
       - booking_postgres_data:/var/lib/postgresql/data
 
-  # ==========================================
-  # CACHING & RATE LIMITING
-  # ==========================================
   redis:
     image: redis:7-alpine
     container_name: toolsharing-redis
@@ -71,15 +66,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # ==========================================
-  # MESSAGE BROKER (NEW)
-  # ==========================================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: toolsharing-rabbitmq
     ports:
-      - "5672:5672"   # Standard AMQP port (Your Spring Boot apps connect here)
-      - "15672:15672" # Management UI port (You view the dashboard here)
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -88,10 +80,108 @@ services:
       timeout: 5s
       retries: 5
 
+  # ==========================================
+  # 2. DISCOVERY SERVER (EUREKA)
+  # ==========================================
+  eureka-server:
+    build: ./eureka-server  # Make sure this matches your folder name!
+    container_name: toolsharing-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_INSTANCE_HOSTNAME=eureka-server
+
+  # ==========================================
+  # 3. MICROSERVICES
+  # ==========================================
+  auth-service:
+    build: ./auth-service
+    container_name: toolsharing-auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres-auth
+      - eureka-server
+    environment:
+      # These override your application.properties to use Docker networking
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth:5432/auth_db
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - USER_SERVICE_URL=http://user-service:8082
+
+  user-service:
+    build: ./user-service
+    container_name: toolsharing-user-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres-user
+      - eureka-server
+      - rabbitmq
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-user:5432/user_db
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+
+  tool-service:
+    build: ./tool-service
+    container_name: toolsharing-tool-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres-tool
+      - eureka-server
+      - redis
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-tool:5432/tool_db
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_REDIS_HOST=redis
+
+  booking-service:
+    build: ./booking-service
+    container_name: toolsharing-booking-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres-booking
+      - eureka-server
+      - redis
+      - rabbitmq
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-booking:5432/booking_db
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - TOOL_SERVICE_URL=http://tool-service:8083
+      - USER_SERVICE_URL=http://user-service:8082
+
+  notification-service:
+    build: ./notification-service
+    container_name: toolsharing-notification-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - eureka-server
+      - rabbitmq
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+
+  gateway:
+    build: ./gateway
+    container_name: toolsharing-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+      - redis
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_REDIS_HOST=redis
+
 volumes:
   auth_postgres_data:
   user_postgres_data:
   tool_postgres_data:
   booking_postgres_data:
   redis_data:
-  rabbitmq_data: # Added for RabbitMQ persistence
+  rabbitmq_data:

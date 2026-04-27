@@ -55,15 +55,14 @@ public class UserProfile {
     @Column(name = "total_bookings")
     private Integer totalBookings = 0;
 
-    @Column(name = "successful_transactions")
-    private Integer successfulTransactions = 0;
-
-    @Column(name = "cancelled_transactions")
-    private Integer cancelledTransactions = 0;
-
-    @Column(name = "preferences")
-    private String preferences; // JSON string
-
+//    @Column(name = "successful_transactions")
+//    private Integer successfulTransactions = 0;
+//
+//    @Column(name = "cancelled_transactions")
+//    private Integer cancelledTransactions = 0;
+//    @Column(name = "preferences")
+//    private String preferences;
+//
     @Column(name = "last_active")
     private LocalDateTime lastActive;
 

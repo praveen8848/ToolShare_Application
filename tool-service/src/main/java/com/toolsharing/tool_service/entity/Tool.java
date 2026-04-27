@@ -91,7 +91,7 @@ public class Tool {
         AVAILABLE, BORROWED, PENDING, MAINTENANCE
     }
 
-    // ADD THESE:
+
     @Column(name = "pincode", nullable = false)
     private String pincode;
 
