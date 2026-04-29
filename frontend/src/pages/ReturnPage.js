@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import { FaQrcode, FaCheckCircle, FaArrowLeft } from 'react-icons/fa';
-import QRScannerComponent from '../components/bookings/QRScanner';
+
 import bookingService from '../services/bookingService';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -152,11 +152,11 @@ const ReturnPage = () => {
         </Col>
       </Row>
 
-      <QRScannerComponent
+      {/* <QRScannerComponent
         show={showScanner}
         onHide={() => setShowScanner(false)}
         onScanSuccess={handleScanSuccess}
-       />
+       /> */}
     </Container>
   );
 };
