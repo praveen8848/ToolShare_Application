@@ -1,10 +1,11 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Container, Row, Col, Card, Badge } from "react-bootstrap";
-import { 
-  FaWrench, FaSearch, FaCalendarAlt, FaHandshake, 
-  FaMapMarkerAlt, FaStar, FaCheck, FaArrowRight 
+import { useNavigate } from "react-router-dom";
+import { Container, Row, Col, Button, Navbar, Nav } from "react-bootstrap";
+import {
+  FaWrench, FaSearch, FaCalendarAlt, FaHandshake,
+  FaMapMarkerAlt, FaStar, FaCheck, FaArrowRight,
 } from "react-icons/fa";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 /* ----------------------------- Data ----------------------------- */
 const categories = [
@@ -48,295 +49,240 @@ const testimonials = [
   { quote: "It's not really about the tools. It's about knowing the people in your society again.", name: "Amit P.", role: "Lender · Bangalore" },
 ];
 
-/* ----------------------------- Page Component ----------------------------- */
+/* ----------------------------- Styles ----------------------------- */
+const Styles = () => (
+  <style>{`
+    .ts-page { background:#ffffff; color:#0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .ts-page p { color:#475569; }
+    .ts-muted { color:#64748b; }
+    .ts-accent { color:#2563eb; }
+
+    .ts-nav { background:rgba(255,255,255,0.85); backdrop-filter:saturate(180%) blur(12px); border-bottom:1px solid #e2e8f0; position:fixed; top:0; left:0; right:0; z-index:1030; }
+    .ts-brand { display:flex; align-items:center; gap:.6rem; cursor:pointer; font-weight:700; font-size:1.25rem; color:#0f172a; }
+    .ts-brand-mark { width:36px; height:36px; border-radius:10px; background:#2563eb; color:white; display:inline-flex; align-items:center; justify-content:center; }
+    .ts-nav a.nav-link { color:#475569; font-weight:500; }
+    .ts-nav a.nav-link:hover { color:#0f172a; }
+
+    .ts-btn-primary { background:#2563eb; border:none; border-radius:999px; padding:.7rem 1.4rem; font-weight:600; }
+    .ts-btn-primary:hover { background:#1d4ed8; }
+    .ts-btn-outline { background:transparent; border:1px solid #cbd5e1; color:#0f172a; border-radius:999px; padding:.7rem 1.4rem; font-weight:600; }
+    .ts-btn-outline:hover { background:#f1f5f9; border-color:#94a3b8; color:#0f172a; }
+    .ts-btn-ghost { background:transparent; border:none; color:#475569; font-weight:500; }
+    .ts-btn-ghost:hover { color:#0f172a; background:#f1f5f9; }
+
+    .ts-section { padding: 96px 0; }
+    .ts-hero { padding: 160px 0 96px; background: radial-gradient(1000px 500px at 80% -10%, #dbeafe 0%, transparent 60%), #ffffff; }
+    .ts-eyebrow { display:inline-flex; align-items:center; gap:.5rem; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:.35rem .8rem; border-radius:999px; font-size:.8rem; font-weight:600; }
+    .ts-h1 { font-size: clamp(2.4rem, 5vw, 3.75rem); font-weight:800; letter-spacing:-0.02em; line-height:1.05; color:#0f172a; }
+    .ts-h2 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight:800; letter-spacing:-0.02em; color:#0f172a; }
+    .ts-lead { font-size:1.125rem; color:#475569; line-height:1.65; }
+
+    .ts-hero-card { background:#fff; border:1px solid #e2e8f0; border-radius:24px; box-shadow: 0 30px 60px -30px rgba(15,23,42,.18), 0 12px 24px -12px rgba(15,23,42,.08); padding:1.25rem; }
+    .ts-hero-img { aspect-ratio: 4/3; background: linear-gradient(135deg,#f1f5f9,#e0e7ff); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:6rem; }
+    .ts-pill { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:.85rem 1rem; display:flex; align-items:center; gap:.75rem; }
+    .ts-pill-icon { width:36px; height:36px; border-radius:10px; background:#dbeafe; color:#1d4ed8; display:inline-flex; align-items:center; justify-content:center; }
+    .ts-progress { height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; }
+    .ts-progress > span { display:block; height:100%; width:75%; background:#2563eb; border-radius:99px; }
+
+    .ts-marquee { background:#0f172a; color:#cbd5e1; overflow:hidden; padding:1.25rem 0; }
+    .ts-marquee-track { display:inline-block; white-space:nowrap; animation: ts-scroll 40s linear infinite; }
+    .ts-marquee-track span { margin: 0 1.5rem; font-weight:600; font-size:1rem; }
+    .ts-marquee-track .dot { color:#2563eb; }
+    @keyframes ts-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+    .ts-card { background:#fff; border:1px solid #e2e8f0; border-radius:20px; padding:2rem; height:100%; transition:all .25s ease; }
+    .ts-card:hover { transform:translateY(-4px); border-color:#bfdbfe; box-shadow:0 20px 40px -20px rgba(37,99,235,.18); }
+    .ts-step-num { font-size:2.25rem; font-weight:800; color:#cbd5e1; }
+    .ts-step-icon { width:44px; height:44px; border-radius:12px; background:#eff6ff; color:#2563eb; display:inline-flex; align-items:center; justify-content:center; }
+
+    .ts-tool { background:#fff; border:1px solid #e2e8f0; border-radius:20px; overflow:hidden; transition:all .25s ease; height:100%; }
+    .ts-tool:hover { transform:translateY(-4px); box-shadow:0 20px 40px -20px rgba(15,23,42,.15); border-color:#bfdbfe; }
+    .ts-tool-img { aspect-ratio: 5/4; background: linear-gradient(135deg,#f8fafc,#eef2ff); display:flex; align-items:center; justify-content:center; font-size:4.5rem; position:relative; }
+    .ts-tag { position:absolute; top:14px; left:14px; background:#fff; border:1px solid #e2e8f0; border-radius:999px; padding:.25rem .65rem; font-size:.75rem; font-weight:600; color:#0f172a; }
+    .ts-rating { position:absolute; top:14px; right:14px; background:#fff; border:1px solid #e2e8f0; border-radius:999px; padding:.25rem .55rem; font-size:.75rem; font-weight:600; display:inline-flex; align-items:center; gap:.25rem; color:#0f172a; }
+
+    .ts-earn { background: linear-gradient(135deg,#0f172a 0%, #1e293b 100%); color:#e2e8f0; border-radius:32px; padding: 4rem; }
+    .ts-earn h2 { color:#fff; }
+    .ts-earn p { color:#cbd5e1; }
+    .ts-perk { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:1rem 1.1rem; display:flex; align-items:flex-start; gap:.85rem; color:#e2e8f0; }
+    .ts-perk-check { width:28px; height:28px; border-radius:999px; background:#2563eb; color:#fff; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+    .ts-stat { border-left:3px solid #2563eb; padding-left:1rem; }
+    .ts-stat-val { font-size:2.5rem; font-weight:800; color:#0f172a; letter-spacing:-0.02em; }
+    .ts-stat-lbl { color:#64748b; font-size:.8rem; text-transform:uppercase; letter-spacing:.1em; font-weight:600; }
+
+    .ts-quote { background:#fff; border:1px solid #e2e8f0; border-radius:20px; padding:2rem; height:100%; }
+    .ts-quote-mark { font-size:3rem; line-height:1; color:#2563eb; font-weight:800; }
+
+    .ts-cta { background: linear-gradient(180deg,#f8fafc 0%,#ffffff 100%); }
+
+    .ts-footer { background:#0f172a; color:#cbd5e1; padding: 64px 0 32px; }
+    .ts-footer h6 { color:#fff; font-weight:600; margin-bottom:1rem; }
+    .ts-footer a { color:#94a3b8; text-decoration:none; display:block; padding:.25rem 0; }
+    .ts-footer a:hover { color:#fff; }
+    .ts-footer-bottom { border-top:1px solid #1e293b; padding-top:1.5rem; margin-top:3rem; color:#64748b; font-size:.85rem; }
+
+    @media (max-width: 768px) {
+      .ts-section { padding: 64px 0; }
+      .ts-hero { padding: 130px 0 64px; }
+      .ts-earn { padding: 2.5rem 1.5rem; border-radius:24px; }
+    }
+  `}</style>
+);
+
+/* ----------------------------- Page ----------------------------- */
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="landing-wrapper">
-      <style>{`
-        .landing-wrapper {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          min-height: 100vh;
-          font-family: 'Inter', sans-serif;
-          color: #f8fafc;
-          overflow-x: hidden;
-        }
-
-        .gradient-text {
-          background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .btn-custom-primary {
-          background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-          border: none;
-          border-radius: 50px;
-          padding: 12px 28px;
-          color: white;
-          font-weight: 600;
-          transition: all 0.3s ease;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .btn-custom-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-          color: white;
-        }
-
-        .btn-custom-outline {
-          background: transparent;
-          border: 1px solid #334155;
-          border-radius: 50px;
-          padding: 12px 28px;
-          color: white;
-          font-weight: 600;
-          transition: all 0.3s ease;
-        }
-        .btn-custom-outline:hover {
-          border-color: #60a5fa;
-          background: rgba(59, 130, 246, 0.1);
-          color: white;
-        }
-
-        .floating-card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 16px;
-          padding: 1rem;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          position: absolute;
-          z-index: 10;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-12px); }
-        }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-float-delayed { animation: float 6s ease-in-out 1.5s infinite; }
-
-        .marquee-container {
-          background: #1e293b;
-          border-top: 1px solid #334155;
-          border-bottom: 1px solid #334155;
-          padding: 1.5rem 0;
-          overflow: hidden;
-          white-space: nowrap;
-        }
-        .marquee-content {
-          display: inline-block;
-          animation: marquee 40s linear infinite;
-        }
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-
-        .feature-card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 24px;
-          padding: 2rem;
-          height: 100%;
-          transition: all 0.4s ease;
-        }
-        .feature-card:hover {
-          transform: translateY(-5px);
-          border-color: #60a5fa;
-          box-shadow: 0 12px 32px rgba(59, 130, 246, 0.15);
-        }
-
-        .tool-card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 24px;
-          overflow: hidden;
-          transition: all 0.4s ease;
-        }
-        .tool-card:hover {
-          transform: translateY(-5px);
-          border-color: #60a5fa;
-          box-shadow: 0 12px 32px rgba(59, 130, 246, 0.15);
-        }
-
-        .section-padding {
-          padding: 100px 0;
-        }
-      `}</style>
+    <div className="ts-page">
+      <Styles />
 
       {/* NAVBAR */}
-      <div className="d-flex justify-content-between align-items-center py-4 px-4 px-md-5 w-100 position-absolute" style={{ zIndex: 100, top: 0 }}>
-        <div className="d-flex align-items-center gap-2" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <div style={{ background: '#3b82f6', color: 'white', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <FaWrench size={18} />
-          </div>
-          <h4 className="mb-0 fw-bold text-white">ToolShare</h4>
-        </div>
-        <div className="d-none d-md-flex gap-4" style={{ fontWeight: 500 }}>
-          <a href="#how" style={{ color: '#94a3b8', textDecoration: 'none' }}>How it works</a>
-          <Link to="/browse" style={{ color: '#94a3b8', textDecoration: 'none' }}>Browse Tools</Link>
-          <a href="#community" style={{ color: '#94a3b8', textDecoration: 'none' }}>Community</a>
-        </div>
-        <div className="d-flex gap-3">
-          <button className="btn-custom-outline d-none d-sm-block" onClick={() => navigate('/login')}>Sign in</button>
-          <button className="btn-custom-primary" onClick={() => navigate('/register')}>Join free</button>
-        </div>
-      </div>
-
-      {/* HERO SECTION */}
-      <Container className="position-relative" style={{ paddingTop: '160px', paddingBottom: '100px' }}>
-        <Row className="align-items-center g-5">
-          <Col lg={7}>
-            <div className="d-inline-flex align-items-center gap-2 px-3 py-1 mb-4 rounded-pill" style={{ border: '1px solid #334155', background: 'rgba(30, 41, 59, 0.7)', fontSize: '0.85rem', color: '#94a3b8' }}>
-              <span style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '50%' }}></span>
-              Now serving 45+ Indian Cities
+      <Navbar expand="lg" className="ts-nav">
+        <Container>
+          <Navbar.Brand onClick={() => navigate("/")} className="p-0">
+            <span className="ts-brand">
+              <span className="ts-brand-mark"><FaWrench size={16} /></span>
+              ToolShare
+            </span>
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="ts-nav" />
+          <Navbar.Collapse id="ts-nav">
+            <Nav className="mx-auto gap-lg-3">
+              <Nav.Link href="#how">How it works</Nav.Link>
+              <Nav.Link href="#browse">Browse Tools</Nav.Link>
+              <Nav.Link href="#community">Community</Nav.Link>
+            </Nav>
+            <div className="d-flex gap-2">
+              <Button className="ts-btn-ghost" onClick={() => navigate("/login")}>Sign in</Button>
+              <Button className="ts-btn-primary" onClick={() => navigate("/register")}>Join free</Button>
             </div>
-            
-            <h1 className="fw-bolder mb-4" style={{ fontSize: 'clamp(3rem, 5vw, 5rem)', lineHeight: 1.1 }}>
-              Borrow the tool.<br/>
-              <span className="gradient-text font-italic">Skip</span> the hardware store.
-            </h1>
-            
-            <p className="mb-5" style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '600px', lineHeight: 1.6 }}>
-              ToolShare is India's community rental marketplace. Rent a drill from down the street, lend out the saw collecting dust in your garage — and earn while you help your neighbours build.
-            </p>
-            
-            <div className="d-flex flex-wrap gap-3 mb-5">
-              <button className="btn-custom-primary" onClick={() => navigate('/browse')}>
-                Find a tool near you <FaArrowRight size={14} />
-              </button>
-              <button className="btn-custom-outline" onClick={() => navigate('/add-tool')}>
-                List your gear
-              </button>
-            </div>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
 
-            <div className="d-flex align-items-center gap-3">
-              <div className="d-flex align-items-center">
-                <FaStar color="#fbbf24" size={20} className="me-2" />
-                <span className="fw-bold fs-5 text-white">4.9</span>
+      {/* HERO */}
+      <section className="ts-hero">
+        <Container>
+          <Row className="align-items-center g-5">
+            <Col lg={6}>
+              <span className="ts-eyebrow">
+                <span style={{ width: 6, height: 6, borderRadius: 99, background: "#2563eb" }} />
+                Now serving 45+ Indian Cities
+              </span>
+              <h1 className="ts-h1 mt-4">
+                Borrow the tool. <br />
+                <span className="ts-accent">Skip the hardware store.</span>
+              </h1>
+              <p className="ts-lead mt-3" style={{ maxWidth: 540 }}>
+                ToolShare is India's community rental marketplace. Rent a drill from down the street, lend out the saw collecting dust in your garage — and earn while you help your neighbours build.
+              </p>
+              <div className="d-flex flex-wrap gap-2 mt-4">
+                <Button className="ts-btn-primary" onClick={() => navigate("/browse")}>
+                  Find a tool near you <FaArrowRight className="ms-2" size={12} />
+                </Button>
+                <Button className="ts-btn-outline" onClick={() => navigate("/add-tool")}>
+                  List your gear
+                </Button>
               </div>
-              <span style={{ color: '#64748b' }}>|</span>
-              <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Loved by 5,000+ members</span>
-            </div>
-          </Col>
+              <div className="d-flex align-items-center gap-3 mt-4 ts-muted" style={{ fontSize: ".9rem" }}>
+                <span className="d-inline-flex align-items-center gap-1">
+                  <FaStar style={{ color: "#f59e0b" }} /> <strong style={{ color: "#0f172a" }}>4.9</strong>
+                </span>
+                <span>|</span>
+                <span>Loved by 5,000+ members</span>
+              </div>
+            </Col>
 
-          <Col lg={5} className="d-none d-lg-block position-relative">
-            <div style={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
-              borderRadius: '2rem',
-              border: '1px solid #334155',
-              aspectRatio: '4/5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '8rem',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-            }}>
-              🛠️
-            </div>
-            
-            <div className="floating-card animate-float" style={{ top: '10%', left: '-10%', width: '220px' }}>
-              <div className="d-flex gap-3 align-items-center">
-                <div style={{ background: 'rgba(59, 130, 246, 0.2)', padding: '12px', borderRadius: '12px', color: '#60a5fa' }}>
-                  <FaMapMarkerAlt size={18} />
+            <Col lg={6}>
+              <div className="ts-hero-card">
+                <div className="ts-hero-img">🛠️</div>
+                <div className="ts-pill mt-3">
+                  <span className="ts-pill-icon"><FaMapMarkerAlt size={14} /></span>
+                  <div>
+                    <div style={{ fontWeight: 600, color: "#0f172a" }}>Pickup nearby</div>
+                    <div className="ts-muted" style={{ fontSize: ".85rem" }}>2.4 km away</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Pickup nearby</div>
-                  <div className="text-white" style={{ fontWeight: 'bold' }}>2.4 km away</div>
+                <div className="mt-3 px-1">
+                  <div className="ts-muted" style={{ fontSize: ".8rem" }}>Cordless drill · DeWalt</div>
+                  <div className="d-flex align-items-baseline gap-1 mt-1">
+                    <span style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a" }}>₹150</span>
+                    <span className="ts-muted">/ day</span>
+                  </div>
+                  <div className="ts-progress mt-2"><span /></div>
+                  <div className="ts-muted mt-2" style={{ fontSize: ".8rem" }}>3 of 4 days booked this week</div>
                 </div>
               </div>
-            </div>
-
-            <div className="floating-card animate-float-delayed" style={{ bottom: '15%', right: '-10%', width: '240px' }}>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Cordless drill · DeWalt</div>
-              <div className="mt-1 d-flex align-items-baseline gap-1">
-                <h3 className="mb-0 fw-bold" style={{ color: '#60a5fa' }}>₹150</h3>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>/ day</span>
-              </div>
-              <div style={{ height: '6px', background: '#334155', borderRadius: '10px', marginTop: '12px' }}>
-                <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, #3b82f6, #60a5fa)', borderRadius: '10px' }}></div>
-              </div>
-              <p className="mb-0 mt-2" style={{ fontSize: '0.7rem', color: '#64748b' }}>3 of 4 days booked this week</p>
-            </div>
-          </Col>
-        </Row>
-      </Container>
+            </Col>
+          </Row>
+        </Container>
+      </section>
 
       {/* MARQUEE */}
-      <div className="marquee-container">
-        <div className="marquee-content">
+      <div className="ts-marquee">
+        <div className="ts-marquee-track">
           {[...categories, ...categories].map((cat, i) => (
-            <span key={i} className="mx-4 text-white opacity-75 fw-bold" style={{ fontSize: '1.5rem' }}>
-              {cat} <span style={{ color: '#3b82f6', margin: '0 15px' }}>•</span>
-            </span>
+            <span key={i}>{cat} <span className="dot">•</span></span>
           ))}
         </div>
       </div>
 
       {/* HOW IT WORKS */}
-      <Container id="how" className="section-padding">
-        <div className="text-center text-md-start mb-5">
-          <p className="mb-2 fw-bold text-uppercase" style={{ color: '#60a5fa', letterSpacing: '2px', fontSize: '0.85rem' }}>How it works</p>
-          <h2 className="fw-bolder" style={{ fontSize: '2.5rem' }}>
-            Three steps from <span className="gradient-text font-italic">"I need it"</span> to "it's done."
-          </h2>
-        </div>
-
-        <Row className="g-4">
-          {steps.map(s => (
-            <Col md={4} key={s.label}>
-              <div className="feature-card">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h2 style={{ color: 'rgba(255,255,255,0.1)', fontSize: '3.5rem', margin: 0, fontWeight: 800 }}>{s.label}</h2>
-                  <div style={{ background: '#334155', padding: '16px', borderRadius: '16px', color: '#60a5fa' }}>
-                    <s.Icon size={24} />
+      <section className="ts-section" id="how">
+        <Container>
+          <div className="text-center mb-5" style={{ maxWidth: 680, margin: "0 auto" }}>
+            <span className="ts-eyebrow">How it works</span>
+            <h2 className="ts-h2 mt-3">Three steps from "I need it" to "it's done."</h2>
+          </div>
+          <Row className="g-4">
+            {steps.map((s) => (
+              <Col md={4} key={s.label}>
+                <div className="ts-card">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <span className="ts-step-num">{s.label}</span>
+                    <span className="ts-step-icon"><s.Icon size={18} /></span>
                   </div>
+                  <h5 className="mt-4 mb-2" style={{ fontWeight: 700, color: "#0f172a" }}>{s.title}</h5>
+                  <p className="mb-0">{s.body}</p>
                 </div>
-                <h4 className="fw-bold text-white mb-3">{s.title}</h4>
-                <p style={{ color: '#94a3b8', lineHeight: 1.6 }}>{s.body}</p>
-              </div>
-            </Col>
-          ))}
-        </Row>
-      </Container>
+              </Col>
+            ))}
+          </Row>
+        </Container>
+      </section>
 
       {/* FEATURED TOOLS */}
-      <div style={{ background: 'rgba(51, 65, 85, 0.3)' }} className="section-padding" id="browse">
+      <section className="ts-section" id="browse" style={{ background: "#f8fafc" }}>
         <Container>
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5">
+          <div className="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-5">
             <div>
-              <p className="mb-2 fw-bold text-uppercase" style={{ color: '#60a5fa', letterSpacing: '2px', fontSize: '0.85rem' }}>Trending nearby</p>
-              <h2 className="fw-bolder mb-0" style={{ fontSize: '2.5rem' }}>Real tools, from real neighbours.</h2>
+              <span className="ts-eyebrow">Trending nearby</span>
+              <h2 className="ts-h2 mt-3 mb-0">Real tools, from real neighbours.</h2>
             </div>
-            <button className="btn-custom-outline mt-4 mt-md-0" onClick={() => navigate('/browse')}>See all listings</button>
+            <Button className="ts-btn-outline" onClick={() => navigate("/browse")}>See all listings</Button>
           </div>
-
           <Row className="g-4">
-            {tools.map(t => (
+            {tools.map((t) => (
               <Col md={6} lg={4} key={t.name}>
-                <div className="tool-card h-100">
-                  <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', position: 'relative' }}>
-                    {t.emoji}
-                    <Badge bg="primary" style={{ position: 'absolute', top: '15px', left: '15px', padding: '6px 12px' }}>{t.tag}</Badge>
-                    <Badge bg="dark" style={{ position: 'absolute', top: '15px', right: '15px', padding: '6px 12px', border: '1px solid #334155' }}>
-                      <FaStar color="#fbbf24" className="me-1" /> {t.rating}
-                    </Badge>
+                <div className="ts-tool">
+                  <div className="ts-tool-img">
+                    <span>{t.emoji}</span>
+                    <span className="ts-tag">{t.tag}</span>
+                    <span className="ts-rating"><FaStar style={{ color: "#f59e0b" }} size={11} /> {t.rating}</span>
                   </div>
                   <div className="p-4">
-                    <h5 className="fw-bold text-white mb-2">{t.name}</h5>
-                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <FaMapMarkerAlt /> {t.owner}
+                    <h6 style={{ fontWeight: 700, color: "#0f172a" }}>{t.name}</h6>
+                    <div className="ts-muted d-flex align-items-center gap-1" style={{ fontSize: ".85rem" }}>
+                      <FaMapMarkerAlt size={11} /> {t.owner}
                     </div>
-                    <div className="d-flex justify-content-between align-items-end mt-4 pt-3" style={{ borderTop: '1px solid #334155' }}>
+                    <div className="d-flex align-items-center justify-content-between mt-3">
                       <div>
-                        <h3 className="mb-0 fw-bold" style={{ color: '#60a5fa' }}>₹{t.price}</h3>
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>/ day</span>
+                        <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0f172a" }}>₹{t.price}</span>
+                        <span className="ts-muted"> / day</span>
                       </div>
-                      <button className="btn-custom-primary py-2 px-4" onClick={() => navigate('/browse')}>Book</button>
+                      <Button size="sm" className="ts-btn-primary" onClick={() => navigate("/browse")}>Book</Button>
                     </div>
                   </div>
                 </div>
@@ -344,132 +290,122 @@ const LandingPage = () => {
             ))}
           </Row>
         </Container>
-      </div>
+      </section>
 
-      {/* EARN SECTION */}
-      <Container id="earn" className="section-padding">
-        <div style={{ background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)', borderRadius: '2.5rem', border: '1px solid #334155', padding: '4rem 3rem' }}>
-          <Row className="align-items-center g-5">
-            <Col lg={6}>
-              <p className="mb-2 fw-bold text-uppercase" style={{ color: '#60a5fa', letterSpacing: '2px', fontSize: '0.85rem' }}>Lend & earn</p>
-              <h2 className="fw-bolder mb-4 text-white" style={{ fontSize: '3rem', lineHeight: 1.1 }}>
-                Your garage is a <span className="gradient-text font-italic">side hustle</span> waiting to happen.
-              </h2>
-              <p style={{ fontSize: '1.1rem', color: '#94a3b8', lineHeight: 1.6 }}>
-                The average ToolShare lender earns <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>₹15,000 a month</span> renting out tools they already own — and meets half the block doing it.
-              </p>
-              <button className="btn-custom-primary mt-4" onClick={() => navigate('/register')}>
-                Start lending today <FaArrowRight size={14} />
-              </button>
-            </Col>
-            <Col lg={6}>
-              <div className="d-flex flex-column gap-3">
-                {perks.map(p => (
-                  <div key={p} className="d-flex align-items-center gap-3 p-4" style={{ background: 'rgba(51, 65, 85, 0.3)', border: '1px solid #334155', borderRadius: '16px' }}>
-                    <div style={{ background: 'rgba(59, 130, 246, 0.2)', padding: '10px', borderRadius: '50%', color: '#60a5fa' }}>
-                      <FaCheck size={16} />
+      {/* EARN */}
+      <section className="ts-section">
+        <Container>
+          <div className="ts-earn">
+            <Row className="align-items-center g-5">
+              <Col lg={6}>
+                <span className="ts-eyebrow" style={{ background: "rgba(37,99,235,.15)", borderColor: "rgba(37,99,235,.3)", color: "#93c5fd" }}>Lend & earn</span>
+                <h2 className="ts-h2 mt-3">Your garage is a side hustle waiting to happen.</h2>
+                <p className="mt-3" style={{ fontSize: "1.05rem" }}>
+                  The average ToolShare lender earns <strong style={{ color: "#fff" }}>₹15,000 a month</strong> renting out tools they already own — and meets half the block doing it.
+                </p>
+                <Button className="ts-btn-primary mt-3" onClick={() => navigate("/register")}>
+                  Start lending today <FaArrowRight className="ms-2" size={12} />
+                </Button>
+              </Col>
+              <Col lg={6}>
+                <div className="d-flex flex-column gap-3">
+                  {perks.map((p) => (
+                    <div key={p} className="ts-perk">
+                      <span className="ts-perk-check"><FaCheck size={12} /></span>
+                      <span>{p}</span>
                     </div>
-                    <span className="text-white fw-medium">{p}</span>
-                  </div>
-                ))}
-              </div>
-            </Col>
-          </Row>
-        </div>
-      </Container>
+                  ))}
+                </div>
+              </Col>
+            </Row>
+          </div>
+        </Container>
+      </section>
 
       {/* COMMUNITY */}
-      <div style={{ background: 'rgba(51, 65, 85, 0.3)' }} className="section-padding" id="community">
+      <section className="ts-section" id="community" style={{ background: "#f8fafc" }}>
         <Container>
-          <Row className="g-4 mb-5 pb-5">
-            {stats.map(s => (
-              <Col md={3} key={s.label}>
-                <div style={{ borderLeft: '2px solid #3b82f6', paddingLeft: '20px' }}>
-                  <h2 className="fw-bolder mb-1" style={{ color: '#60a5fa', fontSize: '3rem' }}>{s.value}</h2>
-                  <p className="text-uppercase mb-0" style={{ color: '#94a3b8', fontSize: '0.8rem', letterSpacing: '1px' }}>{s.label}</p>
+          <Row className="g-4 mb-5">
+            {stats.map((s) => (
+              <Col xs={6} md={3} key={s.label}>
+                <div className="ts-stat">
+                  <div className="ts-stat-val">{s.value}</div>
+                  <div className="ts-stat-lbl mt-1">{s.label}</div>
                 </div>
               </Col>
             ))}
           </Row>
 
-          <div className="mb-5">
-            <p className="mb-2 fw-bold text-uppercase" style={{ color: '#60a5fa', letterSpacing: '2px', fontSize: '0.85rem' }}>Community voices</p>
-            <h2 className="fw-bolder text-white" style={{ fontSize: '2.5rem' }}>Built on trust, one borrowed drill at a time.</h2>
+          <div style={{ maxWidth: 640 }} className="mb-5">
+            <span className="ts-eyebrow">Community voices</span>
+            <h2 className="ts-h2 mt-3">Built on trust, one borrowed drill at a time.</h2>
           </div>
 
           <Row className="g-4">
-            {testimonials.map((t, i) => (
+            {testimonials.map((t) => (
               <Col md={4} key={t.name}>
-                <Card className="feature-card h-100" style={{ transform: i === 1 ? 'translateY(20px)' : 'none' }}>
-                  <Card.Body className="p-4 d-flex flex-column">
-                    <div style={{ color: '#60a5fa', fontSize: '4rem', lineHeight: 0.5, marginBottom: '20px' }}>"</div>
-                    <p className="font-italic text-white mb-4" style={{ fontSize: '1.1rem', flex: 1 }}>"{t.quote}"</p>
-                    <div className="pt-4" style={{ borderTop: '1px solid #334155' }}>
-                      <p className="fw-bold mb-1" style={{ color: '#60a5fa' }}>{t.name}</p>
-                      <p className="mb-0" style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{t.role}</p>
-                    </div>
-                  </Card.Body>
-                </Card>
+                <div className="ts-quote">
+                  <div className="ts-quote-mark">"</div>
+                  <p className="mt-2" style={{ fontSize: "1rem", color: "#0f172a", lineHeight: 1.55 }}>{t.quote}</p>
+                  <div className="pt-3 mt-3" style={{ borderTop: "1px solid #e2e8f0" }}>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>{t.name}</div>
+                    <div className="ts-muted" style={{ fontSize: ".85rem" }}>{t.role}</div>
+                  </div>
+                </div>
               </Col>
             ))}
           </Row>
         </Container>
-      </div>
+      </section>
 
       {/* CTA */}
-      <Container className="text-center section-padding">
-        <h2 className="fw-bolder text-white mb-4" style={{ fontSize: 'clamp(2.5rem, 4vw, 4.5rem)' }}>
-          Less stuff. More <span className="gradient-text font-italic">building.</span>
-        </h2>
-        <p className="mx-auto mb-5" style={{ color: '#94a3b8', fontSize: '1.1rem', maxWidth: '600px' }}>
-          Join your local tool library — and turn the gear in your garage into something useful again.
-        </p>
-        <div className="d-flex justify-content-center gap-3">
-          <button className="btn-custom-primary" onClick={() => navigate('/browse')}>
-            Find tools nearby <FaArrowRight size={14} />
-          </button>
-          <button className="btn-custom-outline" onClick={() => navigate('/add-tool')}>List your first tool</button>
-        </div>
-        <p className="mt-4" style={{ color: '#64748b', fontSize: '0.85rem' }}>Free to join · No fees until you earn</p>
-      </Container>
+      <section className="ts-section ts-cta text-center">
+        <Container style={{ maxWidth: 760 }}>
+          <h2 className="ts-h2">Less stuff. <span className="ts-accent">More building.</span></h2>
+          <p className="ts-lead mt-3">
+            Join your local tool library — and turn the gear in your garage into something useful again.
+          </p>
+          <div className="d-flex flex-wrap gap-2 justify-content-center mt-4">
+            <Button className="ts-btn-primary" onClick={() => navigate("/browse")}>
+              Find tools nearby <FaArrowRight className="ms-2" size={12} />
+            </Button>
+            <Button className="ts-btn-outline" onClick={() => navigate("/add-tool")}>List your first tool</Button>
+          </div>
+          <div className="ts-muted mt-3" style={{ fontSize: ".85rem" }}>Free to join · No fees until you earn</div>
+        </Container>
+      </section>
 
       {/* FOOTER */}
-      <footer style={{ background: '#0f172a', borderTop: '1px solid #334155', padding: '60px 0 30px' }}>
+      <footer className="ts-footer">
         <Container>
-          <Row className="g-5 mb-5">
-            <Col lg={6}>
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <div style={{ background: '#3b82f6', color: 'white', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FaWrench size={16} />
-                </div>
-                <h5 className="mb-0 fw-bold text-white">ToolShare</h5>
+          <Row className="g-4">
+            <Col md={5}>
+              <div className="ts-brand" style={{ color: "#fff" }}>
+                <span className="ts-brand-mark"><FaWrench size={16} /></span>
+                ToolShare
               </div>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '300px' }}>
+              <p className="mt-3" style={{ color: "#94a3b8", maxWidth: 360 }}>
                 The neighbourhood rental marketplace for India. Made for builders, fixers, and good neighbours.
               </p>
             </Col>
-            <Col lg={3} md={6}>
-              <p className="fw-bold mb-3" style={{ color: '#60a5fa' }}>Product</p>
-              <ul className="list-unstyled" style={{ gap: '10px', display: 'flex', flexDirection: 'column' }}>
-                <li><Link to="/browse" style={{ color: '#94a3b8', textDecoration: 'none' }}>Browse tools</Link></li>
-                <li><Link to="/add-tool" style={{ color: '#94a3b8', textDecoration: 'none' }}>List a tool</Link></li>
-                <li><a href="#how" style={{ color: '#94a3b8', textDecoration: 'none' }}>How it works</a></li>
-              </ul>
+            <Col xs={6} md={3}>
+              <h6>Product</h6>
+              <a href="#browse">Browse tools</a>
+              <a href="#">List a tool</a>
+              <a href="#how">How it works</a>
             </Col>
-            <Col lg={3} md={6}>
-              <p className="fw-bold mb-3" style={{ color: '#60a5fa' }}>Community</p>
-              <ul className="list-unstyled" style={{ gap: '10px', display: 'flex', flexDirection: 'column' }}>
-                <li><a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>Trust & safety</a></li>
-                <li><a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>Help center</a></li>
-                <li><a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>Guidelines</a></li>
-              </ul>
+            <Col xs={6} md={4}>
+              <h6>Community</h6>
+              <a href="#">Trust & safety</a>
+              <a href="#">Help center</a>
+              <a href="#">Guidelines</a>
             </Col>
           </Row>
-          <div className="d-flex flex-column flex-md-row justify-content-between pt-4" style={{ borderTop: '1px solid #334155', color: '#64748b', fontSize: '0.85rem' }}>
-            <p>© {new Date().getFullYear()} ToolShare. Built for the block.</p>
-            <div className="d-flex gap-4">
-              <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Terms</a>
-              <a href="#" style={{ color: '#64748b', textDecoration: 'none' }}>Privacy</a>
+          <div className="ts-footer-bottom d-flex flex-wrap justify-content-between gap-2">
+            <span>© {new Date().getFullYear()} ToolShare. Built for the block.</span>
+            <div className="d-flex gap-3">
+              <a href="#" style={{ display: "inline" }}>Terms</a>
+              <a href="#" style={{ display: "inline" }}>Privacy</a>
             </div>
           </div>
         </Container>

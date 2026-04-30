@@ -21,12 +21,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchange -> exchange
-                        // Explicitly allow the email verification endpoint
-                        .pathMatchers("/api/users/verify-email/**").permitAll()
-                        // Keep other auth routes open if needed (e.g., login/register)
+                        // 1. PUBLIC ENDPOINTS (No Token Needed)
                         .pathMatchers("/api/auth/**").permitAll()
-                        // For local testing, permitAll is okay,
-                        // but in production, anyExchange() would be .authenticated()
+                        .pathMatchers("/api/users/verify-email").permitAll()
+                        .pathMatchers("/api/users/forgot-password").permitAll()
+                        .pathMatchers("/api/users/reset-password").permitAll()
+
+                        // 2. PROTECTED ENDPOINTS
+                        // Note: If you want to enforce security, use .authenticated()
+                        // Since you are debugging, we keep permitAll but ensure the
+                        // filters don't block missing headers for the routes above.
                         .anyExchange().permitAll()
                 )
                 .build();

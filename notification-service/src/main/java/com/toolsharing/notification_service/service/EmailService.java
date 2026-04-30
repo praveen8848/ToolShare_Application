@@ -35,6 +35,7 @@ public class EmailService {
         } catch (Exception e) {
             logger.error("Failed to send email to: {}. Error: {}", to, e.getMessage());
             // In a highly robust system, you might want to save failed emails to a database table to retry later!
+            throw new RuntimeException("SMTP Server failed to process email", e);
         }
     }
 }

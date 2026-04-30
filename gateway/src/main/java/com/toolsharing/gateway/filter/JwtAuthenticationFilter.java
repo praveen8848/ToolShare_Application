@@ -28,7 +28,11 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
     private static final List<String> PUBLIC_ENDPOINTS = Arrays.asList(
             "/api/auth/login",
             "/api/auth/register",
-            "/api/auth/check-email"
+            "/api/auth/check-email",
+            "/api/users/forgot-password",
+            "/api/users/reset-password",
+            "/api/users/verify-email",
+            "/api/users/exists"
     );
 
     public JwtAuthenticationFilter() {

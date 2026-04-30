@@ -161,34 +161,66 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    // =========================================================================
+    // NEW OTP & PASSWORD RESET ENDPOINTS
+    // =========================================================================
+
     /**
-     * Endpoint hit by the React Frontend to verify the token
+     * Verify Registration OTP
      */
     @PostMapping("/verify-email")
-    public ResponseEntity<Map<String, String>> verifyEmail(@RequestParam String token) {
-        boolean isVerified = userService.verifyEmailToken(token);
+    public ResponseEntity<?> verifyEmailOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String otp = request.get("otp");
 
-        Map<String, String> response = new HashMap<>();
+        boolean isVerified = userService.verifyRegistrationOtp(email, otp);
+
         if (isVerified) {
+            Map<String, String> response = new HashMap<>();
             response.put("message", "Email verified successfully!");
             return ResponseEntity.ok(response);
         } else {
-            response.put("error", "Invalid or expired verification link.");
-            return ResponseEntity.badRequest().body(response);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Invalid or expired OTP");
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
     /**
-     * Endpoint to manually trigger the verification email (Useful for testing)
+     * Request Password Reset OTP
      */
-    @PostMapping("/resend-verification")
-    public ResponseEntity<Void> resendVerification(@RequestHeader("X-User-Id") Long userId) {
-        UserProfileDto profile = userService.getProfileByUserId(userId);
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
 
-        if (!profile.getEmailVerified()) {
-            userService.sendVerificationEmail(userId, profile.getEmail(), profile.getName());
+        // Triggers the email if user exists, but always returns 200 OK for security
+        // (prevents hackers from checking which emails are registered)
+        userService.requestPasswordReset(email);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "If that email exists, a reset code has been sent.");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Verify OTP and Set New Password
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String otp = request.get("otp");
+        String newPassword = request.get("newPassword");
+
+        boolean isReset = userService.verifyPasswordResetOtpAndChangePassword(email, otp, newPassword);
+
+        if (isReset) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Password has been reset successfully. You can now login.");
+            return ResponseEntity.ok(response);
+        } else {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Invalid OTP or OTP has expired.");
+            return ResponseEntity.badRequest().body(errorResponse);
         }
-
-        return ResponseEntity.ok().build();
     }
 }

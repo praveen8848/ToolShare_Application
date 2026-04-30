@@ -54,8 +54,29 @@ public class UserProfile {
 
     @Column(name = "total_bookings")
     private Integer totalBookings = 0;
+    @Column(name = "current_otp")
+    private String currentOtp;
 
-//    @Column(name = "successful_transactions")
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
+    public String getCurrentOtp() {
+        return currentOtp;
+    }
+
+    public void setCurrentOtp(String currentOtp) {
+        this.currentOtp = currentOtp;
+    }
+
+    public LocalDateTime getOtpExpiry() {
+        return otpExpiry;
+    }
+
+    public void setOtpExpiry(LocalDateTime otpExpiry) {
+        this.otpExpiry = otpExpiry;
+    }
+
+    //    @Column(name = "successful_transactions")
 //    private Integer successfulTransactions = 0;
 //
 //    @Column(name = "cancelled_transactions")

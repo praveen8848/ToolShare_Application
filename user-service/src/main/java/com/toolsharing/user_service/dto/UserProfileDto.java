@@ -21,9 +21,9 @@ public class UserProfileDto {
     private Double trustScore;
     private Integer totalListings;
     private Integer totalBookings;
-    private Integer successfulTransactions;
-    private Integer cancelledTransactions;
-    private String preferences;
+//    private Integer successfulTransactions;
+//    private Integer cancelledTransactions;
+//    private String preferences;
     private LocalDateTime lastActive;
     private LocalDateTime createdAt;
 }

@@ -7,7 +7,7 @@ const userService = {
       const response = await api.get('/api/users/profile');
       // Ensure profileImageUrl is a full URL if it exists
       if (response.data.profileImageUrl && !response.data.profileImageUrl.startsWith('http')) {
-        response.data.profileImageUrl = `http://localhost:8080${response.data.profileImageUrl}`;
+        response.data.profileImageUrl = `${process.env.REACT_APP_API_GATEWAY_URL || 'http://localhost:8080'}${response.data.profileImageUrl}`;
       }
       return response.data;
     } catch (error) {
@@ -40,7 +40,7 @@ const userService = {
       const imageUrl = response.data.imageUrl;
       const fullImageUrl = imageUrl.startsWith('http') 
         ? imageUrl 
-        : `http://localhost:8080${imageUrl}`;
+        : `${process.env.REACT_APP_API_GATEWAY_URL || 'http://localhost:8080'}${imageUrl}`;
       
       return {
         ...response.data,
@@ -56,9 +56,8 @@ const userService = {
   getUserById: async (userId) => {
     try {
       const response = await api.get(`/api/users/${userId}`);
-      // Ensure profileImageUrl is a full URL if it exists
       if (response.data.profileImageUrl && !response.data.profileImageUrl.startsWith('http')) {
-        response.data.profileImageUrl = `http://localhost:8080${response.data.profileImageUrl}`;
+        response.data.profileImageUrl = `${process.env.REACT_APP_API_GATEWAY_URL || 'http://localhost:8080'}${response.data.profileImageUrl}`;
       }
       return response.data;
     } catch (error) {
@@ -67,14 +66,35 @@ const userService = {
     }
   },
 
-  // NEW: Resend verification email
+  // Resend verification email
   resendVerification: async () => {
     try {
-      // Assuming your api instance (axiosConfig) automatically attaches the JWT/User-ID headers
       const response = await api.post('/api/users/resend-verification');
       return response.data;
     } catch (error) {
       console.error('Resend verification error:', error);
+      throw error;
+    }
+  },
+
+  // NEW: Forgot Password (Request OTP)
+  forgotPassword: async (email) => {
+    try {
+      const response = await api.post('/api/users/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  },
+
+  // NEW: Reset Password (Verify OTP and save new password)
+  resetPassword: async (email, otp, newPassword) => {
+    try {
+      const response = await api.post('/api/users/reset-password', { email, otp, newPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Reset password error:', error);
       throw error;
     }
   }

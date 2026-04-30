@@ -17,6 +17,7 @@ import CategoryManagementPage from '../pages/CategoryManagementPage';
 import ProfilePage from '../pages/ProfilePage';
 import LandingPage from '../pages/LandingPage';
 import ToolViewPage from '../pages/ToolViewPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 
 import OwnerProfile from '../pages/OwnerProfile'; 
 
@@ -42,6 +43,12 @@ const AppRoutes = () => {
           isAuthenticated ? <Navigate to="/dashboard" /> : <RegisterPage />
         }
       />
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />
+        }
+      />
 
       {/* 🔒 ALL PROTECTED ROUTES */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -56,6 +63,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/admin/categories" element={<ProtectedRoute><CategoryManagementPage /></ProtectedRoute>} />
       <Route path="/tools/view/:id" element={<ProtectedRoute><ToolViewPage /></ProtectedRoute>} />
+  
       
       {/* FIX 2: Wrapped in ProtectedRoute so you keep your Navbar/Auth context! */}
       <Route path="/owner/:ownerId" element={<ProtectedRoute><OwnerProfile /></ProtectedRoute>} />

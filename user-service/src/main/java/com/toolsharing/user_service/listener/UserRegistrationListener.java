@@ -40,8 +40,8 @@ public class UserRegistrationListener {
         profile.setTrustScore(0.0);
         profile.setTotalListings(0);
         profile.setTotalBookings(0);
-        profile.setSuccessfulTransactions(0);
-        profile.setCancelledTransactions(0);
+//        profile.setSuccessfulTransactions(0);
+//        profile.setCancelledTransactions(0);
 
         userProfileRepository.save(profile);
 

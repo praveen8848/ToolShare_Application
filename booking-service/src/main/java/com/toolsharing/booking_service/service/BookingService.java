@@ -142,6 +142,35 @@ public class BookingService {
         logger.info("Booking request created: {} by user: {} for tool: {}",
                 savedBooking.getId(), borrowerId, request.getItemId());
 
+        // 👇 NEW CODE: Send Email Notification to Tool Owner 👇
+        try {
+            UserDto owner = userServiceClient.getUserById(tool.getOwnerId());
+            UserDto borrower = userServiceClient.getUserById(borrowerId);
+
+            String emailBody = String.format(
+                    "Hello %s,\n\nGreat news! %s has requested to borrow your '%s' from %s to %s.\n\nPlease log in to your ToolShare dashboard to approve or reject this booking request.",
+                    owner.getName(),
+                    borrower.getName(),
+                    tool.getName(),
+                    request.getStartDate().toString(),
+                    request.getEndDate().toString()
+            );
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventType("BOOKING_REQUESTED")
+                    .recipientEmail(owner.getEmail())
+                    .subject("New Booking Request: " + tool.getName())
+                    .messageBody(emailBody)
+                    .build();
+
+            rabbitTemplate.convertAndSend("toolshare_exchange", "notification_routing_key", event);
+            logger.info("Notification event sent to RabbitMQ for new booking: {}", savedBooking.getId());
+        } catch (Exception e) {
+            // We catch the exception so if the email fails, it DOESN'T roll back the successful booking
+            logger.error("Failed to send notification event to RabbitMQ for new booking: {}", savedBooking.getId(), e);
+        }
+        // 👆 END OF NEW CODE 👆
+
         return convertToResponse(savedBooking);
     }
 

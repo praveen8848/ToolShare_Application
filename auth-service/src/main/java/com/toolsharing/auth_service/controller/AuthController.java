@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -322,5 +323,22 @@ public class AuthController {
         response.put("email", email);
 
         return ResponseEntity.ok(response);
+    }
+    // NEW: Internal endpoint for updating password
+    @PutMapping("/internal/update-password")
+    public ResponseEntity<Void> updatePassword(@RequestParam String email, @RequestParam String password) {
+        logger.info("Received internal request to update password for email: {}", email);
+
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            user.setPassword(passwordEncoder.encode(password));
+            userRepository.save(user);
+            logger.info("Password successfully updated for user: {}", email);
+            return ResponseEntity.ok().build();
+        } else {
+            logger.warn("Attempted to update password for non-existent user: {}", email);
+            return ResponseEntity.notFound().build();
+        }
     }
 }

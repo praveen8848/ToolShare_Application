@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Button, Container, Alert, InputGroup, Spinner } from 'react-bootstrap';
+import { Form, Button, Alert, InputGroup, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { FaEnvelope, FaLock, FaTools, FaArrowRight } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -170,6 +170,16 @@ const LoginPage = () => {
             -webkit-text-fill-color: transparent;
             background-clip: text;
           }
+
+          .utility-link {
+            color: #60a5fa;
+            text-decoration: none;
+            transition: color 0.2s ease;
+          }
+          .utility-link:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+          }
           
           .alert-error {
             background-color: rgba(239, 68, 68, 0.1) !important;
@@ -231,9 +241,15 @@ const LoginPage = () => {
             </Form.Group>
 
             <Form.Group className="mb-4">
-              <Form.Label className="fw-semibold small mb-2" style={{ color: '#cbd5e1' }}>
-                Password
-              </Form.Label>
+              {/* ADDED: Flex container to push "Forgot Password" to the right */}
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <Form.Label className="fw-semibold small mb-0" style={{ color: '#cbd5e1' }}>
+                  Password
+                </Form.Label>
+                <Link to="/forgot-password" className="utility-link small fw-medium">
+                  Forgot Password?
+                </Link>
+              </div>
               <InputGroup className="auth-input-group">
                 <InputGroup.Text className="auth-icon-wrapper">
                   <FaLock />
