@@ -115,58 +115,52 @@ const BrowseToolsPage = () => {
       <style>
         {`
           .browse-wrapper {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: #121212;
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #e2e8f0;
+            color: #E5E5E5;
             padding-bottom: 3rem;
-            padding-top: 76px; /* Fixed: Prevent navbar overlap */
+            padding-top: 76px;
           }
           
           .page-header {
-            padding: 0 0 1.5rem;
-            border-bottom: 1px solid #334155;
-            margin-bottom: 2rem;
-          }
-          
-          .gradient-text {
-            background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-          }
-          
-          /* Location Card - Compact & Professional */
-          .location-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            overflow: hidden;
+            padding: 0 0 1.25rem;
+            border-bottom: 1px solid #2A2A2A;
             margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease;
+          }
+          
+          .page-header h1 {
+            color: #F5F5F5;
+            font-weight: 700;
+          }
+
+          /* Location Card */
+          .location-card {
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 14px;
+            margin-bottom: 1.25rem;
           }
           
           .location-card.active {
-            border-color: #60a5fa;
-            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
           }
           
           .location-card .card-body {
-            padding: 1.5rem;
+            padding: 1.25rem;
           }
           
           .location-header {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
           }
           
           .location-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -174,195 +168,205 @@ const BrowseToolsPage = () => {
           }
           
           .location-icon.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-            color: white;
+            background: #10B981;
+            color: #121212;
           }
           
           .location-icon.inactive {
-            background: linear-gradient(135deg, #475569 0%, #64748b 100%);
-            color: white;
+            background: #2A2A2A;
+            color: #737373;
           }
           
           .location-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 2px;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 1px;
+            color: #F5F5F5;
           }
           
           .location-subtitle {
-            font-size: 0.85rem;
-            margin-bottom: 0;
+            font-size: 0.8rem;
+            color: #737373;
           }
           
           .stats-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            color: #94a3b8;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 8px;
+            color: #A3A3A3;
+            font-size: 0.8rem;
+          }
+
+          .stats-badge span { color: #34D399; }
+
+          /* Buttons */
+          .btn-primary-mint {
+            background: #10B981;
+            color: #121212;
+            border: 1px solid #10B981;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.6rem 1.25rem;
             font-size: 0.9rem;
-            margin-right: 0.75rem;
+            transition: all 0.2s;
           }
           
-          .btn-gradient-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 0.7rem 1.5rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-            font-size: 0.95rem;
+          .btn-primary-mint:hover {
+            background: #059669;
+            border-color: #059669;
+            color: #121212;
           }
           
-          .btn-gradient-primary:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
-            color: white;
-          }
-          
-          .btn-outline-secondary {
+          .btn-outline-mint {
             background: transparent;
-            color: #94a3b8;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 0.7rem 1.5rem;
-            transition: all 0.3s ease;
-            font-size: 0.95rem;
+            color: #A3A3A3;
+            border: 1px solid #2A2A2A;
+            border-radius: 10px;
+            font-weight: 500;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
           }
           
-          .btn-outline-secondary:hover {
-            background: #1e293b;
-            border-color: #60a5fa;
-            color: #e2e8f0;
+          .btn-outline-mint:hover {
+            border-color: #3A3A3A;
+            color: #E5E5E5;
           }
           
           .form-select-dark {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #e2e8f0;
-            border-radius: 12px;
-            padding: 0.7rem 1rem;
+            background: #0A0A0A;
+            border: 1px solid #2A2A2A;
+            color: #E5E5E5;
+            border-radius: 10px;
+            padding: 0.6rem 0.9rem;
             font-weight: 500;
-            font-size: 0.95rem;
-          }
-          
-          .form-select-dark:focus {
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            background: #0f172a;
-            color: #e2e8f0;
-          }
-          
-          .form-select-dark:disabled {
-            background: #1e293b;
-            color: #64748b;
-            opacity: 0.7;
-          }
-          
-          .form-label-dark {
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-          }
-          
-          .alert-warning-dark {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 12px;
-            color: #fbbf24;
-            padding: 0.75rem 1rem;
             font-size: 0.9rem;
           }
           
-          /* Filter Section - Clean & Professional */
+          .form-select-dark:focus {
+            border-color: #10B981;
+            box-shadow: none;
+            background: #0A0A0A;
+            color: #E5E5E5;
+          }
+          
+          .form-select-dark:disabled {
+            background: #1E1E1E;
+            color: #737373;
+            opacity: 0.6;
+          }
+          
+          .form-label-dark {
+            color: #A3A3A3;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.4rem;
+          }
+          
+          .alert-warning-dark {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 10px;
+            color: #F59E0B;
+            padding: 0.6rem 0.9rem;
+            font-size: 0.85rem;
+          }
+          
+          /* Filter Section */
           .filter-section {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
           }
           
           .filter-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #334155;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #2A2A2A;
           }
           
           .filter-header h5 {
             margin: 0;
-            color: #f1f5f9;
-            font-weight: 700;
-            font-size: 1rem;
+            color: #F5F5F5;
+            font-weight: 600;
+            font-size: 0.95rem;
+          }
+
+          .filter-icon-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: #10B981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #121212;
           }
           
           .results-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
           }
           
           .results-count {
-            color: #f1f5f9;
-            font-weight: 600;
-            font-size: 1rem;
+            color: #A3A3A3;
+            font-weight: 500;
+            font-size: 0.9rem;
           }
           
           .results-count span {
-            color: #60a5fa;
+            color: #34D399;
+            font-weight: 600;
           }
           
           .tool-count-badge {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 0.4rem 1rem;
-            color: #60a5fa;
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 8px;
+            padding: 0.3rem 0.8rem;
+            color: #34D399;
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
           }
           
           .location-privacy-note {
-            color: #64748b;
-            font-size: 0.8rem;
-            margin-top: 0.75rem;
+            color: #737373;
+            font-size: 0.75rem;
+            margin-top: 0.6rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
           }
           
           .footer-note {
-            color: #64748b;
-            font-size: 0.85rem;
+            color: #737373;
+            font-size: 0.8rem;
             text-align: center;
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #334155;
+            margin-top: 2.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #2A2A2A;
           }
           
-          /* Responsive */
           @media (max-width: 768px) {
             .location-header {
               flex-direction: column;
               align-items: flex-start;
-              text-align: left;
             }
           }
         `}
@@ -374,40 +378,40 @@ const BrowseToolsPage = () => {
         <div className="page-header">
           <div className="d-flex align-items-center justify-content-between">
             <div>
-              <h1 className="fw-extrabold mb-2" style={{ fontSize: '2.5rem' }}>
-                <span className="gradient-text">Browse Tools</span>
+              <h1 style={{ fontSize: '2rem' }}>
+                Browse Tools
               </h1>
-              <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+              <p style={{ color: '#A3A3A3', fontSize: '1rem' }}>
                 Find the equipment you need from trusted neighbors across India
               </p>
             </div>
             <div className="d-flex gap-2">
               <div className="stats-badge">
-                <FaTools size={14} />
-                <span>{stats.total} Tools</span>
+                <FaTools size={12} />
+                <span>{stats.total}</span> Tools
               </div>
               {isLocationActive && (
                 <div className="stats-badge">
-                  <FaMapMarkerAlt size={14} />
-                  <span>{stats.nearby} Nearby</span>
+                  <FaMapMarkerAlt size={12} />
+                  <span>{stats.nearby}</span> Nearby
                 </div>
               )}
             </div>
           </div>
         </div>
         
-        {/* Location Controls - Compact Layout */}
+        {/* Location Controls */}
         <Card className={`location-card ${isLocationActive ? 'active' : ''}`}>
           <Card.Body>
             <div className="location-header">
               <div className={`location-icon ${isLocationActive ? 'active' : 'inactive'}`}>
-                {isLocationActive ? <FaMapMarkerAlt size={20} /> : <FaGlobe size={20} />}
+                {isLocationActive ? <FaMapMarkerAlt size={18} /> : <FaGlobe size={18} />}
               </div>
               <div className="flex-grow-1">
-                <div className="location-title" style={{ color: isLocationActive ? '#60a5fa' : '#94a3b8' }}>
+                <div className="location-title">
                   {isLocationActive ? 'Local Search Active' : 'Browsing All India'}
                 </div>
-                <div className="location-subtitle" style={{ color: '#64748b' }}>
+                <div className="location-subtitle">
                   {isLocationActive 
                     ? `Showing tools within ${filters.radius || 10}km of your location` 
                     : 'Enable location to find tools near you'}
@@ -440,8 +444,8 @@ const BrowseToolsPage = () => {
               <Col md={8} lg={9}>
                 <div className="d-flex gap-2">
                   <Button
-                    className="btn-gradient-primary"
-                    style={{ minWidth: '180px' }}
+                    className="btn-primary-mint"
+                    style={{ minWidth: '170px' }}
                     onClick={handleGetLocation}
                     disabled={locating}
                   >
@@ -456,7 +460,7 @@ const BrowseToolsPage = () => {
 
                   {isLocationActive && (
                     <Button 
-                      className="btn-outline-secondary"
+                      className="btn-outline-mint"
                       onClick={handleClearLocation}
                     >
                       <FaTimesCircle className="me-2" /> Clear
@@ -475,27 +479,18 @@ const BrowseToolsPage = () => {
             
             {isLocationActive && (
               <div className="location-privacy-note">
-                <FaMapMarkerAlt size={12} />
+                <FaMapMarkerAlt size={11} />
                 Your location is only used to show nearby tools. We never store your exact location.
               </div>
             )}
           </Card.Body>
         </Card>
 
-        {/* Filters Section - Clean & Professional */}
+        {/* Filters Section */}
         <div className="filter-section">
           <div className="filter-header">
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white'
-            }}>
-              <FaFilter size={14} />
+            <div className="filter-icon-box">
+              <FaFilter size={13} />
             </div>
             <h5>Filter & Search</h5>
           </div>
@@ -510,7 +505,7 @@ const BrowseToolsPage = () => {
         <div className="results-header">
           <div className="results-count">
             {loading ? (
-              <Spinner animation="border" size="sm" style={{ color: '#60a5fa', marginRight: '8px' }} />
+              <Spinner animation="border" size="sm" style={{ color: '#34D399', marginRight: '6px' }} />
             ) : (
               <span>{tools.length}</span>
             )}
@@ -518,7 +513,7 @@ const BrowseToolsPage = () => {
           </div>
           {!loading && tools.length > 0 && (
             <div className="tool-count-badge">
-              <FaRupeeSign size={12} />
+              <FaRupeeSign size={10} />
               <span>Starting from ₹100/day</span>
             </div>
           )}
@@ -534,9 +529,9 @@ const BrowseToolsPage = () => {
         
         {/* Footer Note */}
         <div className="footer-note">
-          <FaMapMarkerAlt className="me-1" size={12} />
+          <FaMapMarkerAlt className="me-1" size={11} />
           Available in Mumbai, Delhi, Bangalore, Chennai, Kolkata & 45+ Indian cities •
-          <FaStar className="mx-2" size={12} color="#fbbf24" />
+          <FaStar className="mx-2" size={11} color="#FBBF24" />
           Trusted by 5,000+ community members
         </div>
 

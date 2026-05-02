@@ -2,15 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Card, Button, Spinner, Row, Col } from 'react-bootstrap';
 import { 
-  FaArrowLeft, 
-  FaCalendarAlt, 
-  FaCheckCircle, 
-  FaTools, 
-  FaUser, 
-  FaStar, 
-  FaShieldAlt,
-  FaMapMarkerAlt,
-  FaChartPie
+  FaArrowLeft, FaCalendarAlt, FaCheckCircle, FaTools, 
+  FaUser, FaStar, FaShieldAlt, FaChartPie
 } from 'react-icons/fa';
 import NavigationBar from '../components/common/Navbar';
 
@@ -25,15 +18,9 @@ const OwnerProfile = () => {
     const fetchOwnerProfile = async () => {
       try {
         const response = await fetch(`http://localhost:8080/api/bookings/public/owner-profile/${ownerId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}` 
-          }
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
-
-        if (!response.ok) {
-          throw new Error("Failed to load owner profile. They might have been removed.");
-        }
-        
+        if (!response.ok) throw new Error("Failed to load owner profile.");
         const data = await response.json();
         setProfile(data);
       } catch (err) {
@@ -42,7 +29,6 @@ const OwnerProfile = () => {
         setLoading(false);
       }
     };
-
     fetchOwnerProfile();
   }, [ownerId]);
 
@@ -52,19 +38,20 @@ const OwnerProfile = () => {
   };
 
   const getTrustLevel = (successRate) => {
-    if (successRate >= 90) return { label: 'Excellent', color: '#10b981', icon: '🏆' };
-    if (successRate >= 75) return { label: 'Very Good', color: '#34d399', icon: '⭐' };
-    if (successRate >= 60) return { label: 'Good', color: '#60a5fa', icon: '👍' };
-    if (successRate >= 40) return { label: 'Fair', color: '#fbbf24', icon: '👌' };
-    return { label: 'New', color: '#94a3b8', icon: '🌱' };
+    if (successRate >= 90) return { label: 'Excellent', color: '#10B981', icon: '🏆' };
+    if (successRate >= 75) return { label: 'Very Good', color: '#34D399', icon: '⭐' };
+    if (successRate >= 60) return { label: 'Good', color: '#34D399', icon: '👍' };
+    if (successRate >= 40) return { label: 'Fair', color: '#F59E0B', icon: '👌' };
+    return { label: 'New', color: '#A3A3A3', icon: '🌱' };
   };
 
   if (loading) {
     return (
       <div className="owner-profile-wrapper">
+        <style>{`.owner-profile-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
         <NavigationBar />
-        <div className="loading-container">
-          <Spinner animation="border" />
+        <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: 'calc(100vh - 76px)', color: '#A3A3A3' }}>
+          <Spinner animation="border" style={{ color: '#34D399', width: '3rem', height: '3rem', marginBottom: '1rem' }} />
           <p>Loading owner profile...</p>
         </div>
       </div>
@@ -74,12 +61,13 @@ const OwnerProfile = () => {
   if (error) {
     return (
       <div className="owner-profile-wrapper">
+        <style>{`.owner-profile-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
         <NavigationBar />
         <Container className="py-5">
-          <div className="error-container">
-            <h4>⚠️ {error}</h4>
-            <Button className="back-btn" onClick={() => navigate(-1)}>
-              <FaArrowLeft className="me-2" /> Go Back
+          <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '14px', padding: '2.5rem', textAlign: 'center', color: '#FCA5A5', maxWidth: '440px', margin: '0 auto' }}>
+            <h4 style={{ marginBottom: '1rem' }}>⚠️ {error}</h4>
+            <Button style={{ background: '#10B981', color: '#121212', border: 'none', borderRadius: '10px', padding: '0.6rem 1.5rem', fontWeight: 600 }} onClick={() => navigate(-1)}>
+              <FaArrowLeft className="me-2" size={12} /> Go Back
             </Button>
           </div>
         </Container>
@@ -94,373 +82,264 @@ const OwnerProfile = () => {
       <style>
         {`
           .owner-profile-wrapper {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: #121212;
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #e2e8f0;
+            color: #E5E5E5;
             padding-top: 76px;
             padding-bottom: 3rem;
           }
           
-          .loading-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 76px);
-            color: #94a3b8;
-          }
-          
-          .loading-container .spinner-border {
-            color: #60a5fa !important;
-            width: 3rem;
-            height: 3rem;
-            margin-bottom: 1rem;
-          }
-          
-          .error-container {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 20px;
-            padding: 3rem;
-            text-align: center;
-            color: #fca5a5;
-            max-width: 500px;
-            margin: 0 auto;
-          }
-          
-          .error-container h4 {
-            margin-bottom: 1.5rem;
-          }
-          
           .profile-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 14px;
             overflow: hidden;
             max-width: 800px;
             margin: 0 auto;
           }
           
-          .back-button {
-            background: transparent;
-            color: #94a3b8;
-            border: 1px solid transparent;
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            margin-bottom: 1.5rem;
-          }
-          
-          .back-button:hover {
-            color: #60a5fa;
-            background: rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.2);
-          }
-          
           .back-btn {
             background: transparent;
-            color: #60a5fa;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            color: #A3A3A3;
+            border: 1px solid #2A2A2A;
+            padding: 0.4rem 0.9rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
           }
           
-          .back-btn:hover {
-            background: rgba(59, 130, 246, 0.1);
-            border-color: #60a5fa;
-            color: #93c5fd;
-          }
+          .back-btn:hover { border-color: #3A3A3A; color: #E5E5E5; }
           
           .avatar-section {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
-            padding: 1.5rem 0;
-            border-bottom: 1px solid #334155;
+            gap: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid #2A2A2A;
           }
           
           .avatar-circle {
-            width: 100px;
-            height: 100px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            width: 88px; height: 88px;
+            border-radius: 16px;
+            background: #10B981;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            color: white;
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
-            border: 3px solid #334155;
+            color: #121212;
+            border: 1px solid #10B981;
             flex-shrink: 0;
           }
           
           .owner-name {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #f1f5f9;
-            margin-bottom: 0.25rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #F5F5F5;
+            margin-bottom: 0.15rem;
           }
           
           .member-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 0.35rem 1rem;
-            color: #94a3b8;
-            font-size: 0.85rem;
+            gap: 0.35rem;
+            background: #0A0A0A;
+            border: 1px solid #2A2A2A;
+            border-radius: 8px;
+            padding: 0.25rem 0.75rem;
+            color: #A3A3A3;
+            font-size: 0.8rem;
           }
           
           .trust-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
             font-weight: 600;
-            font-size: 0.9rem;
-            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
           }
           
           .section-title {
-            color: #f1f5f9;
+            color: #F5F5F5;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          
+          .section-title svg { color: #34D399; }
+          
+          .stat-card {
+            background: #0A0A0A;
+            border: 1px solid #2A2A2A;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            height: 100%;
+          }
+          
+          .stat-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: rgba(16,185,129,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            color: #34D399;
+            border: 1px solid rgba(16,185,129,0.15);
+          }
+          
+          .stat-value {
+            font-size: 2rem;
             font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
+            color: #F5F5F5;
+            margin-bottom: 0.15rem;
+          }
+          
+          .stat-label {
+            color: #A3A3A3;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.25rem;
+          }
+          
+          .stat-desc { color: #737373; font-size: 0.75rem; }
+          
+          .info-row {
             display: flex;
             align-items: center;
             gap: 0.75rem;
           }
           
-          .stat-card {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 1.75rem 1.5rem;
-            text-align: center;
-            height: 100%;
-            transition: all 0.3s ease;
-          }
-          
-          .stat-card:hover {
-            border-color: #60a5fa;
-            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.1);
-            transform: translateY(-2px);
-          }
-          
-          .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            color: #60a5fa;
-            border: 1px solid #334155;
-          }
-          
-          .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #f1f5f9;
-            margin-bottom: 0.25rem;
-            line-height: 1.2;
-          }
-          
-          .stat-label {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-          }
-          
-          .stat-desc {
-            color: #64748b;
-            font-size: 0.8rem;
-          }
-          
-          .success-highlight {
-            color: #60a5fa;
-          }
-          
-          .info-row {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid #334155;
-          }
-          
-          .info-row:last-child {
-            border-bottom: none;
-          }
-          
           .info-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            background: rgba(16,185,129,0.08);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #60a5fa;
+            color: #34D399;
             flex-shrink: 0;
           }
           
-          .info-content {
-            flex: 1;
-          }
-          
           .info-label {
-            color: #64748b;
-            font-size: 0.75rem;
+            color: #737373;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
           }
           
-          .info-value {
-            color: #e2e8f0;
-            font-weight: 500;
+          .info-value { color: #E5E5E5; font-weight: 500; }
+          
+          .trust-note {
+            background: rgba(16,185,129,0.04);
+            border: 1px solid rgba(16,185,129,0.1);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
           }
           
+          .trust-note svg { color: #34D399; margin-top: 2px; flex-shrink: 0; }
+          
+          .trust-note h6 { color: #F5F5F5; font-weight: 600; margin-bottom: 0.35rem; }
+          .trust-note p { color: #A3A3A3; font-size: 0.85rem; margin-bottom: 0; }
+
           @media (max-width: 768px) {
-            .avatar-section {
-              flex-direction: column;
-              text-align: center;
-            }
-            
-            .owner-name {
-              font-size: 1.5rem;
-            }
+            .avatar-section { flex-direction: column; text-align: center; }
+            .owner-name { font-size: 1.3rem; }
           }
         `}
       </style>
 
       <NavigationBar />
 
-      <Container style={{ maxWidth: '850px' }}>
-        <button className="back-button" onClick={() => navigate(-1)}>
-          <FaArrowLeft className="me-2" /> Back to Tools
+      <Container style={{ maxWidth: '800px' }}>
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          <FaArrowLeft className="me-2" size={14} /> Back to Tools
         </button>
 
-        <Card className="profile-card">
-          <Card.Body className="p-4 p-md-5">
+        <div className="profile-card">
+          <div className="p-4">
             
-            {/* Avatar & Header Section */}
             <div className="avatar-section">
-              <div className="avatar-circle">
-                {getInitials(profile.name)}
-              </div>
+              <div className="avatar-circle">{getInitials(profile.name)}</div>
               <div className="flex-grow-1">
                 <h1 className="owner-name">{profile.name}</h1>
-                <div className="d-flex flex-wrap align-items-center gap-3">
+                <div className="d-flex flex-wrap align-items-center gap-2">
                   <span className="member-badge">
-                    <FaCalendarAlt size={12} /> 
+                    <FaCalendarAlt size={11} /> 
                     Member since {new Date(profile.memberSince).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </span>
                   {profile.isVerified && (
-                    <span className="member-badge" style={{ color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-                      <FaCheckCircle size={12} /> Verified Owner
+                    <span className="member-badge" style={{ color: '#34D399', borderColor: 'rgba(16,185,129,0.2)' }}>
+                      <FaCheckCircle size={11} /> Verified
                     </span>
                   )}
                 </div>
-                <div className="trust-badge" style={{ 
-                  background: `${trustLevel.color}15`, 
-                  color: trustLevel.color,
-                  border: `1px solid ${trustLevel.color}30`
-                }}>
+                <div className="trust-badge" style={{ background: `${trustLevel.color}12`, color: trustLevel.color, border: `1px solid ${trustLevel.color}25` }}>
                   {trustLevel.icon} {trustLevel.label} Trust Level
                 </div>
               </div>
             </div>
 
-            {/* Stats Section */}
-            <div className="mt-5">
-              <div className="section-title">
-                <FaChartPie style={{ color: '#60a5fa' }} />
-                Community Trust & Activity
-              </div>
-              
-              <Row className="g-4">
+            <div className="mt-4">
+              <div className="section-title"><FaChartPie size={16} /> Community Trust & Activity</div>
+              <Row className="g-3">
                 <Col md={6}>
                   <div className="stat-card">
-                    <div className="stat-icon">
-                      <FaCheckCircle size={22} />
-                    </div>
-                    <div className="stat-value">
-                      {profile.successRate}%
-                    </div>
+                    <div className="stat-icon"><FaCheckCircle size={18} /></div>
+                    <div className="stat-value">{profile.successRate}%</div>
                     <div className="stat-label">Success Rate</div>
-                    <div className="stat-desc">
-                      Based on completed vs. rejected rentals
-                    </div>
+                    <div className="stat-desc">Completed vs. rejected rentals</div>
                   </div>
                 </Col>
-                
                 <Col md={6}>
                   <div className="stat-card">
-                    <div className="stat-icon">
-                      <FaTools size={22} />
-                    </div>
-                    <div className="stat-value">
-                      {profile.totalTools}
-                    </div>
+                    <div className="stat-icon"><FaTools size={18} /></div>
+                    <div className="stat-value">{profile.totalTools}</div>
                     <div className="stat-label">Active Tools</div>
-                    <div className="stat-desc">
-                      Tools available for the community
-                    </div>
+                    <div className="stat-desc">Available for the community</div>
                   </div>
                 </Col>
               </Row>
             </div>
 
-            {/* Additional Info Section */}
             {profile.totalRentals !== undefined && (
-              <div className="mt-5">
-                <div className="section-title">
-                  <FaUser style={{ color: '#60a5fa' }} />
-                  Rental History
-                </div>
-                
-                <div className="stat-card" style={{ padding: '1.25rem' }}>
-                  <Row className="align-items-center">
+              <div className="mt-4">
+                <div className="section-title"><FaUser size={16} /> Rental History</div>
+                <div className="stat-card" style={{ textAlign: 'left' }}>
+                  <Row>
                     <Col xs={6}>
-                      <div className="info-row" style={{ padding: 0, border: 'none' }}>
-                        <div className="info-icon" style={{ width: '36px', height: '36px' }}>
-                          <FaCalendarAlt size={14} />
-                        </div>
-                        <div className="info-content">
+                      <div className="info-row">
+                        <div className="info-icon"><FaCalendarAlt size={12} /></div>
+                        <div>
                           <div className="info-label">Total Rentals</div>
-                          <div className="info-value" style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-                            {profile.totalRentals || 0}
-                          </div>
+                          <div className="info-value" style={{ fontSize: '1.5rem', fontWeight: 700 }}>{profile.totalRentals || 0}</div>
                         </div>
                       </div>
                     </Col>
                     <Col xs={6}>
-                      <div className="info-row" style={{ padding: 0, border: 'none' }}>
-                        <div className="info-icon" style={{ width: '36px', height: '36px' }}>
-                          <FaStar size={14} />
-                        </div>
-                        <div className="info-content">
+                      <div className="info-row">
+                        <div className="info-icon"><FaStar size={12} /></div>
+                        <div>
                           <div className="info-label">Rating</div>
-                          <div className="info-value" style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fbbf24' }}>
-                            {profile.averageRating?.toFixed(1) || '4.8'} ★
-                          </div>
+                          <div className="info-value" style={{ fontSize: '1.5rem', fontWeight: 700, color: '#FBBF24' }}>{profile.averageRating?.toFixed(1) || '4.8'} ★</div>
                         </div>
                       </div>
                     </Col>
@@ -469,32 +348,18 @@ const OwnerProfile = () => {
               </div>
             )}
 
-            {/* Trust Note */}
-            <div className="mt-5">
-              <div style={{
-                background: 'rgba(59, 130, 246, 0.05)',
-                border: '1px solid rgba(59, 130, 246, 0.15)',
-                borderRadius: '16px',
-                padding: '1.25rem 1.5rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '1rem'
-              }}>
-                <FaShieldAlt style={{ color: '#60a5fa', fontSize: '1.25rem', marginTop: '2px' }} />
+            <div className="mt-4">
+              <div className="trust-note">
+                <FaShieldAlt size={16} />
                 <div>
-                  <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '0.5rem' }}>
-                    Trust & Safety
-                  </h6>
-                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
-                    This owner's success rate is calculated based on their rental history. 
-                    Higher success rates indicate reliable and trustworthy community members.
-                  </p>
+                  <h6>Trust & Safety</h6>
+                  <p>This owner's success rate is based on their rental history. Higher rates indicate reliable community members.</p>
                 </div>
               </div>
             </div>
 
-          </Card.Body>
-        </Card>
+          </div>
+        </div>
       </Container>
     </div>
   );

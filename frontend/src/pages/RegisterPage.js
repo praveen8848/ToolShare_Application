@@ -9,16 +9,12 @@ import api from '../config/axiosConfig';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
-  
-  // Form Data
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otp, setOtp] = useState('');
-  
-  // UI States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -75,8 +71,7 @@ const RegisterPage = () => {
       {/* ── Graphite + Mint Theme Styles ── */}
       <style>
         {`
-          /* ── Theme Variables ── */
-          :root {
+          .register-wrapper {
             --auth-bg: #121212;
             --auth-surface: #1E1E1E;
             --auth-surface-hover: #2A2A2A;
@@ -96,9 +91,7 @@ const RegisterPage = () => {
             --auth-success-bg: rgba(16, 185, 129, 0.1);
             --auth-success-border: rgba(16, 185, 129, 0.3);
             --auth-input-bg: #0A0A0A;
-          }
-
-          .register-wrapper {
+            
             background: var(--auth-bg);
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -155,6 +148,13 @@ const RegisterPage = () => {
           
           .auth-input::placeholder { color: var(--auth-text-dim); }
 
+          .auth-input:-webkit-autofill,
+          .auth-input:-webkit-autofill:hover,
+          .auth-input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 30px var(--auth-input-bg) inset !important;
+            -webkit-text-fill-color: var(--auth-text) !important;
+          }
+
           .auth-icon-wrapper {
             background-color: transparent;
             border: none;
@@ -167,7 +167,6 @@ const RegisterPage = () => {
             color: var(--auth-accent);
           }
 
-          /* ── PRIMARY BUTTON ── */
           .btn-auth-primary {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: #121212;
@@ -198,7 +197,6 @@ const RegisterPage = () => {
           
           .text-muted-custom { color: var(--auth-text-muted); }
           
-          /* ── BRAND ICON ── */
           .brand-icon-wrapper {
             width: 56px;
             height: 56px;
@@ -215,7 +213,6 @@ const RegisterPage = () => {
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
           }
           
-          /* ── LINK ── */
           .link-gradient {
             background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
             -webkit-background-clip: text;
@@ -244,7 +241,6 @@ const RegisterPage = () => {
             text-decoration: underline;
           }
           
-          /* ── ALERTS ── */
           .alert-error {
             background-color: var(--auth-danger-bg) !important;
             color: #fca5a5 !important;
@@ -259,7 +255,6 @@ const RegisterPage = () => {
             border-radius: 12px !important;
           }
           
-          /* ── BENEFITS ── */
           .benefits-section {
             background: var(--auth-input-bg);
             border: 1px solid var(--auth-border);
@@ -283,13 +278,18 @@ const RegisterPage = () => {
             flex-shrink: 0;
           }
 
-          /* ── HEADING ── */
           .heading-gradient {
             background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-size: 1.8rem;
+          }
+
+          @media (max-width: 576px) {
+            .auth-card {
+              padding: 1.5rem 1.25rem;
+            }
           }
         `}
       </style>
@@ -312,7 +312,6 @@ const RegisterPage = () => {
             </Alert>
           )}
 
-          {/* ================= STEP 1: REGISTRATION DETAILS ================= */}
           {step === 1 ? (
             <>
               <div className="text-center mb-4">
@@ -391,7 +390,6 @@ const RegisterPage = () => {
                   </Col>
                 </Row>
 
-                {/* Benefits Section */}
                 <div className="benefits-section">
                   <div className="benefit-item">
                     <FaCheckCircle size={12} />
@@ -426,7 +424,6 @@ const RegisterPage = () => {
               </div>
             </>
           ) : (
-            /* ================= STEP 2: OTP VERIFICATION ================= */
             <>
               <div className="text-center mb-4">
                 <div className="brand-icon-wrapper icon-mint mb-3">

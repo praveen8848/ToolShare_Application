@@ -1,11 +1,18 @@
 /* 1. Import a premium, modern font (Inter) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* 2. Base App Styles */
+/* 2. Force Scrollbar Always Visible — Prevents Layout Shift */
+html {
+  overflow-y: scroll;
+}
+
+/* 3. Base App Styles */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc; /* A very soft, modern off-white background */
+  background-color: #f8fafc;
   color: #0f172a;
+  /* Prevents body shift when scrollbar appears */
+  padding-right: 0 !important;
 }
 
 /* ==========================================================================
@@ -20,18 +27,18 @@ body {
   right: 0;
   z-index: 1030;
   padding: 0 1.5rem;
-  pointer-events: none; /* Allows clicking "through" the empty space around the bar */
+  pointer-events: none;
 }
 
 /* The actual Glass Pill */
 .modern-navbar {
-  pointer-events: auto; /* Re-enables clicking on the bar itself */
+  pointer-events: auto;
   background-color: rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 10px 40px -10px rgba(37, 99, 235, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
-  border-radius: 100px; /* Perfect pill shape */
+  border-radius: 100px;
   padding: 0.5rem 1rem !important;
   max-width: 1100px;
   margin: 0 auto;
@@ -54,9 +61,7 @@ body {
   letter-spacing: -0.5px;
 }
 
-/* -----------------------------------------
-   SEGMENTED CONTROL (The inner nav pill)
-   ----------------------------------------- */
+/* Segmented Control — Inner Nav Pill */
 .nav-center-group {
   background-color: rgba(241, 245, 249, 0.7);
   border-radius: 100px;
@@ -73,14 +78,12 @@ body {
   padding: 0.5rem 1.25rem !important;
   border-radius: 100px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
 }
 
 .nav-link-custom:hover {
   color: #1e293b !important;
 }
 
-/* The "Switch" active state */
 .nav-link-custom.active {
   color: #2563eb !important;
   background-color: #ffffff;
@@ -88,9 +91,7 @@ body {
   font-weight: 600;
 }
 
-/* -----------------------------------------
-   RIGHT SIDE ACTIONS
-   ----------------------------------------- */
+/* Right Side Actions */
 .btn-logout {
   color: #64748b;
   border: 1px solid transparent;
@@ -120,14 +121,31 @@ body {
   background: rgba(241, 245, 249, 0.8);
 }
 
-/* -----------------------------------------
-   MOBILE RESPONSIVENESS
-   ----------------------------------------- */
+/* Optional: Style scrollbar for dark theme pages */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mobile Responsiveness */
 @media (max-width: 991px) {
   .modern-navbar {
-    border-radius: 24px; /* Less rounded when expanded on mobile */
+    border-radius: 24px;
     padding: 1rem !important;
   }
+  
   .nav-center-group {
     background-color: transparent;
     border: none;
@@ -136,15 +154,18 @@ body {
     align-items: stretch;
     margin-top: 1rem;
   }
+  
   .nav-link-custom {
     border-radius: 12px;
     margin-bottom: 0.25rem;
     padding: 0.75rem 1rem !important;
   }
+  
   .nav-link-custom.active {
     background-color: #eff6ff;
     box-shadow: none;
   }
+  
   .user-action-group {
     margin-top: 1rem;
     padding-top: 1rem;

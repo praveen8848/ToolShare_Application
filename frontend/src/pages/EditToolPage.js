@@ -4,8 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { 
   FaUpload, FaTrash, FaSave, FaArrowLeft, FaMapMarkerAlt, 
-  FaPhone, FaInfoCircle, FaRupeeSign, FaWrench, FaTags, FaImages,
-  FaShieldAlt, FaCheckCircle
+  FaPhone, FaRupeeSign, FaWrench, FaImages, FaShieldAlt
 } from 'react-icons/fa';
 import toolService from '../services/toolService';
 import { toast } from 'react-toastify';
@@ -21,26 +20,13 @@ const EditToolPage = () => {
   const [newImagePreviews, setNewImagePreviews] = useState([]);
   
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    categoryId: '',
-    dailyRate: '',
-    weeklyRate: '',
-    monthlyRate: '',
-    depositAmount: '',
-    status: '',
-    pincode: '',
-    city: '',
-    state: '',
-    pickupInstructions: '',
-    ownerContact: '',
-    contactMethod: 'BOTH'
+    name: '', description: '', categoryId: '', dailyRate: '', weeklyRate: '',
+    monthlyRate: '', depositAmount: '', status: '', pincode: '', city: '',
+    state: '', pickupInstructions: '', ownerContact: '', contactMethod: 'BOTH'
   });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
+  useEffect(() => { loadData(); }, [id]);
 
   const loadData = async () => {
     setLoading(true);
@@ -49,24 +35,14 @@ const EditToolPage = () => {
         toolService.getToolById(id),
         toolService.getCategories()
       ]);
-      
       setFormData({
-        name: tool.name || '',
-        description: tool.description || '',
-        categoryId: tool.categoryId || '',
-        dailyRate: tool.dailyRate || '',
-        weeklyRate: tool.weeklyRate || '',
-        monthlyRate: tool.monthlyRate || '',
-        depositAmount: tool.depositAmount || '',
-        status: tool.status || 'AVAILABLE',
-        pincode: tool.pincode || '',
-        city: tool.city || '',
-        state: tool.state || '',
-        pickupInstructions: tool.pickupInstructions || '',
-        ownerContact: tool.ownerContact || '',
+        name: tool.name || '', description: tool.description || '', categoryId: tool.categoryId || '',
+        dailyRate: tool.dailyRate || '', weeklyRate: tool.weeklyRate || '', monthlyRate: tool.monthlyRate || '',
+        depositAmount: tool.depositAmount || '', status: tool.status || 'AVAILABLE',
+        pincode: tool.pincode || '', city: tool.city || '', state: tool.state || '',
+        pickupInstructions: tool.pickupInstructions || '', ownerContact: tool.ownerContact || '',
         contactMethod: tool.contactMethod || 'BOTH'
       });
-      
       setExistingImages(tool.images || []);
       setCategories(categoriesData || []);
     } catch (error) {
@@ -80,7 +56,6 @@ const EditToolPage = () => {
   const onDrop = (acceptedFiles) => {
     const newPreviews = [...newImagePreviews];
     const newImagesList = [...newImages];
-    
     acceptedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -94,15 +69,10 @@ const EditToolPage = () => {
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': [] },
-    maxFiles: 5,
+    onDrop, accept: { 'image/*': [] }, maxFiles: 5,
   });
 
-  const removeExistingImage = (index) => {
-    setExistingImages(existingImages.filter((_, i) => i !== index));
-  };
-
+  const removeExistingImage = (index) => setExistingImages(existingImages.filter((_, i) => i !== index));
   const removeNewImage = (index) => {
     setNewImages(newImages.filter((_, i) => i !== index));
     setNewImagePreviews(newImagePreviews.filter((_, i) => i !== index));
@@ -111,24 +81,18 @@ const EditToolPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const validate = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Tool name is required';
     if (!formData.categoryId) newErrors.categoryId = 'Category is required';
-    if (!formData.dailyRate || parseFloat(formData.dailyRate) < 0) {
-      newErrors.dailyRate = 'Valid daily rate is required';
-    }
-    
+    if (!formData.dailyRate || parseFloat(formData.dailyRate) < 0) newErrors.dailyRate = 'Valid daily rate is required';
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.state.trim()) newErrors.state = 'State is required';
     if (!formData.ownerContact.trim()) newErrors.ownerContact = 'Contact number is required';
-
     return newErrors;
   };
 
@@ -140,20 +104,16 @@ const EditToolPage = () => {
       toast.error('Please fix the highlighted errors');
       return;
     }
-
     setSaving(true);
     try {
-      const allImages = [...existingImages, ...newImages];
-      
       await toolService.updateTool(id, {
         ...formData,
         dailyRate: parseFloat(formData.dailyRate),
         weeklyRate: formData.weeklyRate ? parseFloat(formData.weeklyRate) : null,
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : null,
         depositAmount: formData.depositAmount ? parseFloat(formData.depositAmount) : null,
-        images: allImages
+        images: [...existingImages, ...newImages]
       });
-      
       toast.success('Tool updated successfully!');
       navigate('/my-tools');
     } catch (error) {
@@ -166,19 +126,11 @@ const EditToolPage = () => {
   if (loading) {
     return (
       <div className="edit-tool-wrapper">
-        <style>
-          {`
-            .edit-tool-wrapper {
-              background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-              min-height: 100vh;
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            }
-          `}
-        </style>
+        <style>{`.edit-tool-wrapper { background: #121212; min-height: 100vh; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
         <Container className="py-5 text-center">
           <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
-            <Spinner animation="border" style={{ color: '#60a5fa', width: '3rem', height: '3rem' }} />
-            <h5 className="mt-3" style={{ color: '#94a3b8' }}>Loading tool details...</h5>
+            <Spinner animation="border" style={{ color: '#34D399', width: '3rem', height: '3rem' }} />
+            <p className="mt-3" style={{ color: '#A3A3A3' }}>Loading tool details...</p>
           </div>
         </Container>
       </div>
@@ -190,448 +142,286 @@ const EditToolPage = () => {
       <style>
         {`
           .edit-tool-wrapper {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: #121212;
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #e2e8f0;
+            color: #E5E5E5;
             padding-bottom: 4rem;
+            padding-top: 76px;
           }
-          
+
           .page-header {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding-top: 1.5rem;
-          }
-          
-          .back-button {
-            color: #94a3b8;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            border: 1px solid transparent;
-            background: transparent;
-          }
-          
-          .back-button:hover {
-            color: #60a5fa;
-            background: rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.2);
-          }
-          
-          .section-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
+            gap: 0.75rem;
             margin-bottom: 1.5rem;
+            padding-top: 1rem;
+          }
+
+          .page-header h2 {
+            font-weight: 700;
+            color: #F5F5F5;
+          }
+
+          .back-btn {
+            color: #A3A3A3;
+            background: transparent;
+            border: 1px solid #2A2A2A;
+            border-radius: 8px;
+            padding: 0.4rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .back-btn:hover { border-color: #3A3A3A; color: #E5E5E5; }
+
+          .section-card {
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 14px;
+            margin-bottom: 1.25rem;
             overflow: hidden;
           }
-          
+
           .section-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid #334155;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #2A2A2A;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.6rem;
           }
-          
+
           .section-header h5 {
             margin: 0;
-            color: #f1f5f9;
-            font-weight: 700;
-          }
-          
-          .section-body {
-            padding: 1.5rem;
-          }
-          
-          .form-label-dark {
-            color: #cbd5e1;
+            color: #F5F5F5;
             font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
           }
-          
+
+          .section-body { padding: 1.25rem; }
+
+          .form-label-dark {
+            color: #A3A3A3;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+          }
+
           .form-control-dark, .form-select-dark {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #e2e8f0;
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
+            background: #0A0A0A;
+            border: 1px solid #2A2A2A;
+            color: #E5E5E5;
+            border-radius: 10px;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.9rem;
           }
-          
+
           .form-control-dark:focus, .form-select-dark:focus {
-            border-color: #60a5fa;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            background: #0f172a;
-            color: #e2e8f0;
+            border-color: #10B981;
+            box-shadow: none;
+            background: #0A0A0A;
+            color: #E5E5E5;
           }
-          
-          .form-control-dark::placeholder {
-            color: #64748b;
-          }
-          
-          .form-control-dark.is-invalid {
-            border-color: #ef4444;
-          }
-          
+
+          .form-control-dark::placeholder { color: #737373; }
+
+          .form-control-dark.is-invalid { border-color: #EF4444; }
+
           .input-group-text-dark {
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #94a3b8;
-            border-radius: 12px 0 0 12px;
+            background: #0A0A0A;
+            border: 1px solid #2A2A2A;
+            color: #A3A3A3;
+            border-radius: 10px 0 0 10px;
           }
-          
-          .input-group .form-control-dark {
-            border-left: none;
+
+          .privacy-note {
+            background: rgba(16, 185, 129, 0.06);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: #34D399;
+            font-size: 0.85rem;
           }
-          
-          .privacy-alert {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 14px;
-            padding: 1rem 1.25rem;
-            color: #93c5fd;
-          }
-          
+
           .private-section {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+            background: #0A0A0A;
+            border: 1px solid #2A2A2A;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
           }
-          
+
           .dropzone {
-            background: #0f172a;
-            border: 2px dashed #334155;
-            border-radius: 16px;
-            padding: 2.5rem;
+            background: #0A0A0A;
+            border: 2px dashed #2A2A2A;
+            border-radius: 12px;
+            padding: 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
           }
-          
-          .dropzone:hover {
-            border-color: #60a5fa;
-            background: rgba(59, 130, 246, 0.05);
-          }
-          
-          .dropzone.active {
-            border-color: #60a5fa;
-            background: rgba(59, 130, 246, 0.1);
-          }
-          
+
+          .dropzone:hover { border-color: #10B981; }
+
           .image-preview-container {
             position: relative;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
-            border: 1px solid #334155;
+            border: 1px solid #2A2A2A;
           }
-          
+
           .delete-image-btn {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            background: #ef4444;
-            color: white;
+            top: 6px; right: 6px;
+            background: #EF4444;
+            color: #fff;
             border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
+            border-radius: 6px;
+            width: 24px; height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            z-index: 2;
+            font-size: 0.7rem;
           }
-          
-          .delete-image-btn:hover {
-            background: #dc2626;
-            transform: scale(1.1);
-          }
-          
-          .btn-gradient-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 0.75rem 2rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-          
-          .btn-gradient-primary:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-            color: white;
-          }
-          
-          .btn-gradient-primary:disabled {
-            opacity: 0.6;
-            transform: none;
-            box-shadow: none;
-          }
-          
-          .btn-outline-secondary-custom {
-            background: transparent;
-            color: #94a3b8;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 0.75rem 2rem;
-            transition: all 0.3s ease;
-          }
-          
-          .btn-outline-secondary-custom:hover {
-            background: #1e293b;
-            border-color: #60a5fa;
-            color: #e2e8f0;
-          }
-          
-          .radio-group {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 0.5rem;
-          }
-          
-          .radio-label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #cbd5e1;
-            cursor: pointer;
-          }
-          
-          .radio-label input[type="radio"] {
-            accent-color: #60a5fa;
-            width: 18px;
-            height: 18px;
-          }
-          
-          .required-star {
-            color: #ef4444;
-            margin-left: 2px;
-          }
-          
-          .gradient-text {
-            background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-          }
-          
-          .action-bar {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 2rem;
-          }
-          
-          .status-badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
+
+          .delete-image-btn:hover { background: #DC2626; }
+
+          .btn-mint {
+            background: #10B981;
+            color: #121212;
+            border: 1px solid #10B981;
             border-radius: 10px;
+            font-weight: 600;
+            padding: 0.65rem 1.5rem;
             font-size: 0.9rem;
+            transition: all 0.2s;
+          }
+
+          .btn-mint:hover { background: #059669; border-color: #059669; color: #121212; }
+          .btn-mint:disabled { opacity: 0.5; }
+
+          .btn-outline {
+            background: transparent;
+            color: #A3A3A3;
+            border: 1px solid #2A2A2A;
+            border-radius: 10px;
             font-weight: 500;
+            padding: 0.65rem 1.5rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+          }
+
+          .btn-outline:hover { border-color: #3A3A3A; color: #E5E5E5; }
+
+          .radio-group { display: flex; gap: 1.25rem; margin-top: 0.25rem; }
+          .radio-label { display: flex; align-items: center; gap: 0.4rem; color: #A3A3A3; cursor: pointer; font-size: 0.9rem; }
+          .radio-label input[type="radio"] { accent-color: #10B981; }
+
+          .required-star { color: #EF4444; }
+
+          .action-bar { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+          @media (max-width: 768px) {
+            .section-body { padding: 1rem; }
           }
         `}
       </style>
 
-      <Container style={{ maxWidth: '900px' }}>
+      <Container style={{ maxWidth: '860px' }}>
         
-        {/* Page Header */}
         <div className="page-header">
-          <button 
-            className="back-button"
-            onClick={() => navigate('/my-tools')}
-          >
-            <FaArrowLeft size={20} />
+          <button className="back-btn" onClick={() => navigate('/my-tools')}>
+            <FaArrowLeft size={18} />
           </button>
-          <h2 className="mb-0">
-            <span className="gradient-text">Edit Tool Listing</span>
-          </h2>
+          <h2>Edit Tool Listing</h2>
         </div>
         
         <Form onSubmit={handleSubmit}>
           
-          {/* SECTION 1: BASIC INFO */}
+          {/* Basic Info */}
           <div className="section-card">
             <div className="section-header">
-              <FaWrench style={{ color: '#60a5fa', fontSize: '1.25rem' }} />
+              <FaWrench style={{ color: '#34D399' }} />
               <h5>Basic Information</h5>
             </div>
             <div className="section-body">
               <Row>
                 <Col md={7}>
                   <Form.Group className="mb-3">
-                    <Form.Label className="form-label-dark">
-                      Tool Name <span className="required-star">*</span>
-                    </Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="e.g., Bosch Professional Drill"
-                      className="form-control-dark"
-                      isInvalid={!!errors.name}
-                    />
-                    {errors.name && (
-                      <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                        {errors.name}
-                      </div>
-                    )}
+                    <Form.Label className="form-label-dark">Tool Name <span className="required-star">*</span></Form.Label>
+                    <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} placeholder="e.g., Bosch Professional Drill" className="form-control-dark" isInvalid={!!errors.name} />
+                    {errors.name && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.name}</div>}
                   </Form.Group>
                 </Col>
                 <Col md={5}>
                   <Form.Group className="mb-3">
                     <Form.Label className="form-label-dark">Status</Form.Label>
-                    <Form.Select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
-                      className="form-select-dark"
-                    >
-                      <option value="AVAILABLE">🟢 Available</option>
-                      <option value="BORROWED">🟡 Borrowed</option>
-                      <option value="MAINTENANCE">🔴 Maintenance</option>
+                    <Form.Select name="status" value={formData.status} onChange={handleChange} className="form-select-dark">
+                      <option value="AVAILABLE">Available</option>
+                      <option value="BORROWED">Borrowed</option>
+                      <option value="MAINTENANCE">Maintenance</option>
                     </Form.Select>
                   </Form.Group>
                 </Col>
               </Row>
-
               <Form.Group className="mb-3">
-                <Form.Label className="form-label-dark">
-                  Category <span className="required-star">*</span>
-                </Form.Label>
-                <Form.Select
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleChange}
-                  className="form-select-dark"
-                  isInvalid={!!errors.categoryId}
-                >
+                <Form.Label className="form-label-dark">Category <span className="required-star">*</span></Form.Label>
+                <Form.Select name="categoryId" value={formData.categoryId} onChange={handleChange} className="form-select-dark" isInvalid={!!errors.categoryId}>
                   <option value="">Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </Form.Select>
-                {errors.categoryId && (
-                  <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                    {errors.categoryId}
-                  </div>
-                )}
+                {errors.categoryId && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.categoryId}</div>}
               </Form.Group>
-
-              <Form.Group className="mb-0">
+              <Form.Group>
                 <Form.Label className="form-label-dark">Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe your tool's condition, included accessories, etc..."
-                  className="form-control-dark"
-                />
+                <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleChange} placeholder="Describe your tool's condition, included accessories..." className="form-control-dark" />
               </Form.Group>
             </div>
           </div>
 
-          {/* SECTION 2: PRICING */}
+          {/* Pricing */}
           <div className="section-card">
             <div className="section-header">
-              <FaRupeeSign style={{ color: '#34d399', fontSize: '1.25rem' }} />
+              <FaRupeeSign style={{ color: '#34D399' }} />
               <h5>Pricing Details</h5>
             </div>
             <div className="section-body">
               <Row className="g-3">
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">
-                      Daily Rate (₹) <span className="required-star">*</span>
-                    </Form.Label>
+                    <Form.Label className="form-label-dark">Daily Rate (₹) <span className="required-star">*</span></Form.Label>
                     <InputGroup>
-                      <InputGroup.Text className="input-group-text-dark">
-                        <FaRupeeSign />
-                      </InputGroup.Text>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="dailyRate"
-                        value={formData.dailyRate}
-                        onChange={handleChange}
-                        className="form-control-dark"
-                        isInvalid={!!errors.dailyRate}
-                      />
+                      <InputGroup.Text className="input-group-text-dark">₹</InputGroup.Text>
+                      <Form.Control type="number" step="0.01" name="dailyRate" value={formData.dailyRate} onChange={handleChange} className="form-control-dark" isInvalid={!!errors.dailyRate} />
                     </InputGroup>
-                    {errors.dailyRate && (
-                      <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                        {errors.dailyRate}
-                      </div>
-                    )}
+                    {errors.dailyRate && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.dailyRate}</div>}
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">Weekly Rate (₹) (Optional)</Form.Label>
+                    <Form.Label className="form-label-dark">Weekly Rate (₹) <span style={{ color: '#737373', fontWeight: 400 }}>(optional)</span></Form.Label>
                     <InputGroup>
-                      <InputGroup.Text className="input-group-text-dark">
-                        <FaRupeeSign />
-                      </InputGroup.Text>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="weeklyRate"
-                        value={formData.weeklyRate}
-                        onChange={handleChange}
-                        className="form-control-dark"
-                      />
+                      <InputGroup.Text className="input-group-text-dark">₹</InputGroup.Text>
+                      <Form.Control type="number" step="0.01" name="weeklyRate" value={formData.weeklyRate} onChange={handleChange} className="form-control-dark" />
                     </InputGroup>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">Monthly Rate (₹) (Optional)</Form.Label>
+                    <Form.Label className="form-label-dark">Monthly Rate (₹) <span style={{ color: '#737373', fontWeight: 400 }}>(optional)</span></Form.Label>
                     <InputGroup>
-                      <InputGroup.Text className="input-group-text-dark">
-                        <FaRupeeSign />
-                      </InputGroup.Text>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="monthlyRate"
-                        value={formData.monthlyRate}
-                        onChange={handleChange}
-                        className="form-control-dark"
-                      />
+                      <InputGroup.Text className="input-group-text-dark">₹</InputGroup.Text>
+                      <Form.Control type="number" step="0.01" name="monthlyRate" value={formData.monthlyRate} onChange={handleChange} className="form-control-dark" />
                     </InputGroup>
                   </Form.Group>
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">Deposit Amount (₹) (Optional)</Form.Label>
+                    <Form.Label className="form-label-dark">Deposit (₹) <span style={{ color: '#737373', fontWeight: 400 }}>(optional)</span></Form.Label>
                     <InputGroup>
-                      <InputGroup.Text className="input-group-text-dark">
-                        <FaRupeeSign />
-                      </InputGroup.Text>
-                      <Form.Control
-                        type="number"
-                        step="0.01"
-                        name="depositAmount"
-                        value={formData.depositAmount}
-                        onChange={handleChange}
-                        placeholder="Refundable deposit"
-                        className="form-control-dark"
-                      />
+                      <InputGroup.Text className="input-group-text-dark">₹</InputGroup.Text>
+                      <Form.Control type="number" step="0.01" name="depositAmount" value={formData.depositAmount} onChange={handleChange} placeholder="Refundable" className="form-control-dark" />
                     </InputGroup>
                   </Form.Group>
                 </Col>
@@ -639,120 +429,54 @@ const EditToolPage = () => {
             </div>
           </div>
 
-          {/* SECTION 3: LOCATION & CONTACT */}
+          {/* Location */}
           <div className="section-card">
             <div className="section-header">
-              <FaMapMarkerAlt style={{ color: '#f59e0b', fontSize: '1.25rem' }} />
+              <FaMapMarkerAlt style={{ color: '#34D399' }} />
               <h5>Location & Pickup</h5>
             </div>
             <div className="section-body">
-              <div className="privacy-alert mb-4">
+              <div className="privacy-note mb-4">
                 <FaShieldAlt className="me-2" />
-                Updating your Pincode, City, or State will recalculate your tool's map position. 
-                <strong> Your exact house address remains hidden</strong> until a booking is confirmed.
+                Your exact address remains hidden until a booking is confirmed.
               </div>
-
               <Row className="g-3 mb-4">
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">
-                      Pincode <span className="required-star">*</span>
-                    </Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="pincode" 
-                      value={formData.pincode} 
-                      onChange={handleChange} 
-                      className="form-control-dark"
-                      isInvalid={!!errors.pincode} 
-                    />
-                    {errors.pincode && (
-                      <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                        {errors.pincode}
-                      </div>
-                    )}
+                    <Form.Label className="form-label-dark">Pincode <span className="required-star">*</span></Form.Label>
+                    <Form.Control type="text" name="pincode" value={formData.pincode} onChange={handleChange} className="form-control-dark" isInvalid={!!errors.pincode} />
+                    {errors.pincode && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.pincode}</div>}
                   </Form.Group>
                 </Col>
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">
-                      City <span className="required-star">*</span>
-                    </Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="city" 
-                      value={formData.city} 
-                      onChange={handleChange} 
-                      className="form-control-dark"
-                      isInvalid={!!errors.city} 
-                    />
-                    {errors.city && (
-                      <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                        {errors.city}
-                      </div>
-                    )}
+                    <Form.Label className="form-label-dark">City <span className="required-star">*</span></Form.Label>
+                    <Form.Control type="text" name="city" value={formData.city} onChange={handleChange} className="form-control-dark" isInvalid={!!errors.city} />
+                    {errors.city && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.city}</div>}
                   </Form.Group>
                 </Col>
                 <Col md={4}>
                   <Form.Group>
-                    <Form.Label className="form-label-dark">
-                      State <span className="required-star">*</span>
-                    </Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      name="state" 
-                      value={formData.state} 
-                      onChange={handleChange} 
-                      className="form-control-dark"
-                      isInvalid={!!errors.state} 
-                    />
-                    {errors.state && (
-                      <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                        {errors.state}
-                      </div>
-                    )}
+                    <Form.Label className="form-label-dark">State <span className="required-star">*</span></Form.Label>
+                    <Form.Control type="text" name="state" value={formData.state} onChange={handleChange} className="form-control-dark" isInvalid={!!errors.state} />
+                    {errors.state && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.state}</div>}
                   </Form.Group>
                 </Col>
               </Row>
-
               <div className="private-section">
                 <Form.Group className="mb-3">
-                  <Form.Label className="form-label-dark">Private Pickup Instructions</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    name="pickupInstructions"
-                    value={formData.pickupInstructions}
-                    onChange={handleChange}
-                    placeholder="e.g., House No. 42, Near City Mall. Call when you arrive."
-                    className="form-control-dark"
-                  />
+                  <Form.Label className="form-label-dark">Pickup Instructions</Form.Label>
+                  <Form.Control as="textarea" rows={2} name="pickupInstructions" value={formData.pickupInstructions} onChange={handleChange} placeholder="e.g., House No. 42, Near City Mall" className="form-control-dark" />
                 </Form.Group>
-
                 <Row className="g-3">
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label className="form-label-dark">
-                        Contact Number <span className="required-star">*</span>
-                      </Form.Label>
+                      <Form.Label className="form-label-dark">Contact Number <span className="required-star">*</span></Form.Label>
                       <InputGroup>
-                        <InputGroup.Text className="input-group-text-dark">
-                          <FaPhone />
-                        </InputGroup.Text>
-                        <Form.Control
-                          type="tel"
-                          name="ownerContact"
-                          value={formData.ownerContact}
-                          onChange={handleChange}
-                          className="form-control-dark"
-                          isInvalid={!!errors.ownerContact}
-                        />
+                        <InputGroup.Text className="input-group-text-dark"><FaPhone /></InputGroup.Text>
+                        <Form.Control type="tel" name="ownerContact" value={formData.ownerContact} onChange={handleChange} className="form-control-dark" isInvalid={!!errors.ownerContact} />
                       </InputGroup>
-                      {errors.ownerContact && (
-                        <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '4px' }}>
-                          {errors.ownerContact}
-                        </div>
-                      )}
+                      {errors.ownerContact && <div style={{ color: '#FCA5A5', fontSize: '0.8rem', marginTop: '4px' }}>{errors.ownerContact}</div>}
                     </Form.Group>
                   </Col>
                   <Col md={6}>
@@ -761,13 +485,7 @@ const EditToolPage = () => {
                       <div className="radio-group">
                         {['CALL', 'TEXT', 'BOTH'].map(method => (
                           <label key={method} className="radio-label">
-                            <input
-                              type="radio"
-                              name="contactMethod"
-                              value={method}
-                              checked={formData.contactMethod === method}
-                              onChange={handleChange}
-                            />
+                            <input type="radio" name="contactMethod" value={method} checked={formData.contactMethod === method} onChange={handleChange} />
                             {method === 'BOTH' ? 'Both' : method.charAt(0) + method.slice(1).toLowerCase()}
                           </label>
                         ))}
@@ -779,15 +497,13 @@ const EditToolPage = () => {
             </div>
           </div>
 
-          {/* SECTION 4: IMAGES */}
+          {/* Images */}
           <div className="section-card">
             <div className="section-header">
-              <FaImages style={{ color: '#a78bfa', fontSize: '1.25rem' }} />
+              <FaImages style={{ color: '#34D399' }} />
               <h5>Photos</h5>
             </div>
             <div className="section-body">
-              
-              {/* Existing Images */}
               {existingImages.length > 0 && (
                 <div className="mb-4">
                   <Form.Label className="form-label-dark">Current Photos</Form.Label>
@@ -795,59 +511,32 @@ const EditToolPage = () => {
                     {existingImages.map((image, index) => (
                       <Col key={`existing-${index}`} xs={4} md={3} lg={2}>
                         <div className="image-preview-container">
-                          <Image 
-                            src={image} 
-                            style={{ height: '100px', width: '100%', objectFit: 'cover' }} 
-                          />
-                          <button
-                            type="button"
-                            className="delete-image-btn"
-                            onClick={() => removeExistingImage(index)}
-                          >
-                            <FaTrash size={12} />
-                          </button>
+                          <Image src={image} style={{ height: '90px', width: '100%', objectFit: 'cover' }} />
+                          <button type="button" className="delete-image-btn" onClick={() => removeExistingImage(index)}><FaTrash size={10} /></button>
                         </div>
                       </Col>
                     ))}
                   </Row>
                 </div>
               )}
-
-              {/* Dropzone */}
               <Form.Label className="form-label-dark">Upload New Photos</Form.Label>
-              <div
-                {...getRootProps()}
-                className={`dropzone ${isDragActive ? 'active' : ''}`}
-              >
+              <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
                 <input {...getInputProps()} />
-                <FaUpload size={36} style={{ color: '#64748b', marginBottom: '1rem' }} />
-                <h6 style={{ color: '#e2e8f0', marginBottom: '0.5rem' }}>
-                  {isDragActive ? 'Drop images here!' : 'Click or drag images here to upload'}
+                <FaUpload size={30} style={{ color: '#737373', marginBottom: '0.75rem' }} />
+                <h6 style={{ color: '#E5E5E5', marginBottom: '0.25rem', fontSize: '0.95rem' }}>
+                  {isDragActive ? 'Drop images here' : 'Click or drag images to upload'}
                 </h6>
-                <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 0 }}>
-                  Max 5 photos (JPG, PNG)
-                </p>
+                <p style={{ color: '#737373', fontSize: '0.8rem', marginBottom: 0 }}>Max 5 photos (JPG, PNG)</p>
               </div>
-
-              {/* New Image Previews */}
               {newImagePreviews.length > 0 && (
                 <div className="mt-4">
-                  <Form.Label className="form-label-dark">New Photos To Add</Form.Label>
+                  <Form.Label className="form-label-dark">New Photos</Form.Label>
                   <Row className="g-3">
                     {newImagePreviews.map((preview, index) => (
                       <Col key={`new-${index}`} xs={4} md={3} lg={2}>
-                        <div className="image-preview-container" style={{ borderColor: '#60a5fa' }}>
-                          <Image 
-                            src={preview} 
-                            style={{ height: '100px', width: '100%', objectFit: 'cover' }} 
-                          />
-                          <button
-                            type="button"
-                            className="delete-image-btn"
-                            onClick={() => removeNewImage(index)}
-                          >
-                            <FaTrash size={12} />
-                          </button>
+                        <div className="image-preview-container">
+                          <Image src={preview} style={{ height: '90px', width: '100%', objectFit: 'cover' }} />
+                          <button type="button" className="delete-image-btn" onClick={() => removeNewImage(index)}><FaTrash size={10} /></button>
                         </div>
                       </Col>
                     ))}
@@ -857,25 +546,10 @@ const EditToolPage = () => {
             </div>
           </div>
 
-          {/* BOTTOM ACTION BAR */}
           <div className="action-bar">
-            <Button
-              className="btn-outline-secondary-custom"
-              onClick={() => navigate('/my-tools')}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="btn-gradient-primary"
-              type="submit"
-              disabled={saving}
-            >
-              {saving ? (
-                <><Spinner animation="border" size="sm" className="me-2" /> Saving...</>
-              ) : (
-                <><FaSave className="me-2" /> Save Changes</>
-              )}
+            <Button className="btn-outline" onClick={() => navigate('/my-tools')} disabled={saving}>Cancel</Button>
+            <Button className="btn-mint" type="submit" disabled={saving}>
+              {saving ? <><Spinner animation="border" size="sm" className="me-2" /> Saving...</> : <><FaSave className="me-2" /> Save Changes</>}
             </Button>
           </div>
         </Form>

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, Tabs, Tab, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Badge, Button, Spinner, Alert, Tabs, Tab, Modal } from 'react-bootstrap';
 import { 
   FaCalendarAlt, FaTools, FaUser, FaCheckCircle, FaTimesCircle, FaClock, 
   FaTrash, FaMapMarkerAlt, FaPhone, FaInfoCircle, FaRupeeSign,
   FaArrowRight, FaSearch, FaBoxOpen
 } from 'react-icons/fa';
 import { useBookings } from '../hooks/useBookings';
-import { formatCurrency, formatDate, formatDateTime } from '../utils/formatters';
+import { formatDate, formatDateTime } from '../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -26,38 +26,18 @@ const MyBookingsPage = () => {
   const completedBookings = bookings?.filter(b => b.status === 'COMPLETED') || [];
 
   const getStatusBadge = (status) => {
-    const variants = {
-      'PENDING': { bg: '#fbbf24', color: '#0f172a', icon: <FaClock /> },
-      'CONFIRMED': { bg: '#10b981', color: '#ffffff', icon: <FaCheckCircle /> },
-      'REJECTED': { bg: '#ef4444', color: '#ffffff', icon: <FaTimesCircle /> },
-      'CANCELLED': { bg: '#64748b', color: '#ffffff', icon: <FaTimesCircle /> },
-      'COMPLETED': { bg: '#3b82f6', color: '#ffffff', icon: <FaCheckCircle /> },
+    const config = {
+      'PENDING':   { bg: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: 'rgba(245,158,11,0.2)', icon: <FaClock size={10} />, label: 'Pending' },
+      'CONFIRMED': { bg: 'rgba(16,185,129,0.1)', color: '#34D399', border: 'rgba(16,185,129,0.2)', icon: <FaCheckCircle size={10} />, label: 'Confirmed' },
+      'REJECTED':  { bg: 'rgba(239,68,68,0.1)', color: '#EF4444', border: 'rgba(239,68,68,0.2)', icon: <FaTimesCircle size={10} />, label: 'Rejected' },
+      'CANCELLED': { bg: 'rgba(115,115,115,0.1)', color: '#737373', border: 'rgba(115,115,115,0.2)', icon: <FaTimesCircle size={10} />, label: 'Cancelled' },
+      'COMPLETED': { bg: 'rgba(16,185,129,0.1)', color: '#34D399', border: 'rgba(16,185,129,0.2)', icon: <FaCheckCircle size={10} />, label: 'Completed' },
     };
-    
-    const labels = {
-      'PENDING': 'Pending',
-      'CONFIRMED': 'Confirmed',
-      'REJECTED': 'Rejected',
-      'CANCELLED': 'Cancelled',
-      'COMPLETED': 'Completed',
-    };
-    
-    const style = variants[status] || { bg: '#64748b', color: '#ffffff', icon: <FaInfoCircle /> };
-    
+    const { bg, color, border, icon, label } = config[status] || config['PENDING'];
     return (
-      <Badge style={{ 
-        backgroundColor: style.bg, 
-        color: style.color,
-        padding: '6px 12px',
-        borderRadius: '10px',
-        fontWeight: 500,
-        fontSize: '0.8rem',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px'
-      }}>
-        {style.icon} {labels[status] || status}
-      </Badge>
+      <span style={{ background: bg, color, border: `1px solid ${border}`, padding: '3px 10px', borderRadius: '6px', fontWeight: 500, fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+        {icon} {label}
+      </span>
     );
   };
 
@@ -69,14 +49,9 @@ const MyBookingsPage = () => {
 
   const handleDeleteBooking = async () => {
     if (!bookingToDelete) return;
-
     setProcessing(bookingToDelete.id);
     const success = await deleteBooking(bookingToDelete.id);
-
-    if (success) {
-      setShowDeleteModal(false);
-      setBookingToDelete(null);
-    }
+    if (success) { setShowDeleteModal(false); setBookingToDelete(null); }
     setProcessing(null);
   };
 
@@ -86,112 +61,7 @@ const MyBookingsPage = () => {
     setProcessing(null);
   };
 
-  const canDelete = (booking) => {
-    return ['REJECTED', 'COMPLETED', 'CANCELLED'].includes(booking.status);
-  };
-
-  const getActionButton = (booking) => {
-    if (booking.status === 'CONFIRMED') {
-      return (
-        <Button 
-          className="btn-return w-100"
-          onClick={() => handleRequestReturn(booking.id)}
-          disabled={processing === booking.id}
-        >
-          {processing === booking.id ? (
-            <Spinner animation="border" size="sm" />
-          ) : (
-            <><FaCheckCircle className="me-2" /> Request Return</>
-          )}
-        </Button>
-      );
-    }
-    if (booking.status === 'PENDING') {
-      return (
-        <Button 
-          className="btn-cancel w-100"
-          onClick={() => handleCancelBooking(booking.id)}
-          disabled={processing === booking.id}
-        >
-          {processing === booking.id ? (
-            <Spinner animation="border" size="sm" />
-          ) : (
-            <><FaTimesCircle className="me-2" /> Cancel Request</>
-          )}
-        </Button>
-      );
-    }
-    return null;
-  };
-
-  const renderPickupDetails = (booking) => {
-    if (!booking.pickupLocation && !booking.pickupDateTime) return null;
-    
-    return (
-      <div className="pickup-details">
-        <div className="pickup-header" onClick={() => setExpandedBooking(expandedBooking === booking.id ? null : booking.id)}>
-          <span>
-            <FaMapMarkerAlt className="me-2" />
-            Pickup Information
-          </span>
-          <Button variant="link" className="expand-btn">
-            {expandedBooking === booking.id ? 'Hide Details' : 'Show Details'}
-          </Button>
-        </div>
-        
-        {(expandedBooking === booking.id || !booking.pickupDateTime) && (
-          <div className="pickup-content">
-            {booking.pickupDateTime && (
-              <div className="detail-row">
-                <span className="detail-label">
-                  <FaClock className="me-2" />
-                  Date & Time
-                </span>
-                <span className="detail-value">{formatDateTime(booking.pickupDateTime)}</span>
-              </div>
-            )}
-            
-            {booking.pickupLocation && (
-              <div className="detail-row">
-                <span className="detail-label">
-                  <FaMapMarkerAlt className="me-2" />
-                  Location
-                </span>
-                <span className="detail-value">{booking.pickupLocation}</span>
-              </div>
-            )}
-            
-            {booking.pickupInstructions && (
-              <div className="detail-row">
-                <span className="detail-label">Instructions</span>
-                <span className="detail-value">{booking.pickupInstructions}</span>
-              </div>
-            )}
-            
-            {booking.ownerContact && (
-              <div className="detail-row">
-                <span className="detail-label">
-                  <FaPhone className="me-2" />
-                  Contact
-                </span>
-                <span className="detail-value">
-                  {booking.ownerContact} 
-                  <Badge className="contact-method">{booking.contactMethod || 'Call/Text'}</Badge>
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {!booking.pickupDateTime && (
-          <div className="pickup-pending">
-            <FaInfoCircle className="me-2" />
-            Pickup details will be shared by the owner after approval.
-          </div>
-        )}
-      </div>
-    );
-  };
+  const canDelete = (booking) => ['REJECTED', 'COMPLETED', 'CANCELLED'].includes(booking.status);
 
   const renderBookingCard = (booking) => (
     <Col key={booking.id} md={6} lg={4} className="mb-4">
@@ -202,62 +72,65 @@ const MyBookingsPage = () => {
         </div>
         
         <div className="booking-info">
-          <div className="info-row">
-            <FaCalendarAlt />
-            <span>{formatDate(booking.startDate)} - {formatDate(booking.endDate)}</span>
-          </div>
-          <div className="info-row">
-            <FaUser />
-            <span>Owner: {booking.ownerName || 'Unknown'}</span>
-          </div>
-          <div className="info-row">
-            <FaTools />
-            <span>Tool ID: #{booking.itemId}</span>
-          </div>
+          <div className="info-row"><FaCalendarAlt size={13} /><span>{formatDate(booking.startDate)} - {formatDate(booking.endDate)}</span></div>
+          <div className="info-row"><FaUser size={13} /><span>Owner: {booking.ownerName || 'Unknown'}</span></div>
+          <div className="info-row"><FaTools size={13} /><span>Tool ID: #{booking.itemId}</span></div>
         </div>
         
         <div className="booking-pricing">
           <div className="price-row">
-            <span>Total Amount:</span>
-            <span className="price-value">
-              <FaRupeeSign size={14} />
-              {booking.totalAmount?.toLocaleString('en-IN') || '0'}
-            </span>
+            <span>Total</span>
+            <span className="price-value"><FaRupeeSign size={12} />{booking.totalAmount?.toLocaleString('en-IN') || '0'}</span>
           </div>
-          
           {booking.depositAmount > 0 && (
-            <div className="price-row deposit">
-              <span>Deposit:</span>
-              <span>
-                <FaRupeeSign size={12} />
-                {booking.depositAmount?.toLocaleString('en-IN')}
-              </span>
+            <div className="price-row">
+              <span>Deposit</span>
+              <span style={{ color: '#34D399', fontWeight: 600 }}><FaRupeeSign size={10} />{booking.depositAmount?.toLocaleString('en-IN')}</span>
             </div>
           )}
         </div>
         
-        {booking.status === 'CONFIRMED' && renderPickupDetails(booking)}
+        {booking.status === 'CONFIRMED' && (
+          <div className="pickup-section">
+            <div className="pickup-header" onClick={() => setExpandedBooking(expandedBooking === booking.id ? null : booking.id)}>
+              <FaMapMarkerAlt size={12} /> Pickup Info
+              <span className="expand-link">{expandedBooking === booking.id ? 'Hide' : 'Show'}</span>
+            </div>
+            {(expandedBooking === booking.id || !booking.pickupDateTime) && (
+              <div className="pickup-content">
+                {booking.pickupDateTime ? (
+                  <>
+                    <div className="detail-row"><FaClock size={11} /><span>{formatDateTime(booking.pickupDateTime)}</span></div>
+                    {booking.pickupLocation && <div className="detail-row"><FaMapMarkerAlt size={11} /><span>{booking.pickupLocation}</span></div>}
+                    {booking.ownerContact && <div className="detail-row"><FaPhone size={11} /><span>{booking.ownerContact}</span></div>}
+                  </>
+                ) : (
+                  <div className="pickup-pending"><FaInfoCircle size={12} /> Details shared after approval</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="booking-actions">
-          {getActionButton(booking)}
-          
+          {booking.status === 'CONFIRMED' && (
+            <Button className="btn-mint w-100" onClick={() => handleRequestReturn(booking.id)} disabled={processing === booking.id}>
+              {processing === booking.id ? <Spinner animation="border" size="sm" /> : <><FaCheckCircle className="me-2" size={12} /> Request Return</>}
+            </Button>
+          )}
+          {booking.status === 'PENDING' && (
+            <Button className="btn-outline-danger w-100" onClick={() => handleCancelBooking(booking.id)} disabled={processing === booking.id}>
+              {processing === booking.id ? <Spinner animation="border" size="sm" /> : <><FaTimesCircle className="me-2" size={12} /> Cancel Request</>}
+            </Button>
+          )}
           {canDelete(booking) && (
-            <Button 
-              className="btn-delete w-100 mt-2"
-              onClick={() => {
-                setBookingToDelete(booking);
-                setShowDeleteModal(true);
-              }}
-            >
-              <FaTrash className="me-2" />
-              Delete Record
+            <Button className="btn-delete w-100 mt-2" onClick={() => { setBookingToDelete(booking); setShowDeleteModal(true); }}>
+              <FaTrash className="me-2" size={11} /> Delete
             </Button>
           )}
         </div>
         
-        <div className="booking-footer">
-          Requested on {formatDate(booking.createdAt)}
-        </div>
+        <div className="booking-footer">Requested on {formatDate(booking.createdAt)}</div>
       </div>
     </Col>
   );
@@ -273,11 +146,10 @@ const MyBookingsPage = () => {
   if (loading) {
     return (
       <div className="bookings-wrapper">
+        <style>{`.bookings-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; }`}</style>
         <Container className="py-5 text-center">
-          <div className="loading-state">
-            <Spinner animation="border" />
-            <p>Loading your bookings...</p>
-          </div>
+          <Spinner animation="border" style={{ color: '#34D399' }} />
+          <p style={{ color: '#A3A3A3', marginTop: '1rem' }}>Loading your bookings...</p>
         </Container>
       </div>
     );
@@ -286,10 +158,10 @@ const MyBookingsPage = () => {
   if (error) {
     return (
       <div className="bookings-wrapper">
+        <style>{`.bookings-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; }`}</style>
         <Container className="py-5">
-          <Alert className="error-alert">
-            <Alert.Heading>Error Loading Bookings</Alert.Heading>
-            <p className="mb-0">{error}</p>
+          <Alert style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#FCA5A5', borderRadius: '14px' }}>
+            {error}
           </Alert>
         </Container>
       </div>
@@ -304,511 +176,305 @@ const MyBookingsPage = () => {
         <style>
           {`
             .bookings-wrapper {
-              background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+              background: #121212;
               min-height: 100vh;
               padding-top: 76px;
               font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-              color: #e2e8f0;
+              color: #E5E5E5;
               padding-bottom: 3rem;
             }
             
             .page-header {
-              padding: 2rem 0 1.5rem;
-              border-bottom: 1px solid #334155;
-              margin-bottom: 2rem;
+              padding: 1.5rem 0 1rem;
+              border-bottom: 1px solid #2A2A2A;
+              margin-bottom: 1.5rem;
             }
-            
-            .gradient-text {
-              background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              background-clip: text;
-            }
+
+            .page-header h1 { font-weight: 700; color: #F5F5F5; font-size: 2rem; }
             
             .booking-card {
-              background: #1e293b;
-              border: 1px solid #334155;
-              border-radius: 20px;
+              background: #1E1E1E;
+              border: 1px solid #2A2A2A;
+              border-radius: 14px;
               overflow: hidden;
-              transition: all 0.3s ease;
               height: 100%;
               display: flex;
               flex-direction: column;
             }
             
-            .booking-card:hover {
-              border-color: #60a5fa;
-              box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
-              transform: translateY(-2px);
-            }
-            
             .booking-header {
-              padding: 1.25rem 1.5rem;
-              border-bottom: 1px solid #334155;
+              padding: 1rem 1.25rem;
+              border-bottom: 1px solid #2A2A2A;
               display: flex;
               justify-content: space-between;
               align-items: flex-start;
-              gap: 0.75rem;
+              gap: 0.5rem;
             }
             
             .booking-title {
-              color: #f1f5f9;
-              font-weight: 700;
+              color: #F5F5F5;
+              font-weight: 600;
               margin: 0;
-              font-size: 1.1rem;
-              line-height: 1.4;
+              font-size: 1rem;
             }
             
             .booking-info {
-              padding: 1.25rem 1.5rem;
-              background: #0f172a;
-              border-bottom: 1px solid #334155;
+              padding: 1rem 1.25rem;
+              background: #0A0A0A;
+              border-bottom: 1px solid #2A2A2A;
             }
             
             .info-row {
               display: flex;
               align-items: center;
-              gap: 0.75rem;
-              color: #94a3b8;
-              font-size: 0.9rem;
-              margin-bottom: 0.75rem;
+              gap: 0.5rem;
+              color: #A3A3A3;
+              font-size: 0.85rem;
+              margin-bottom: 0.5rem;
             }
             
-            .info-row:last-child {
-              margin-bottom: 0;
-            }
-            
-            .info-row svg {
-              color: #60a5fa;
-              width: 16px;
-            }
+            .info-row:last-child { margin-bottom: 0; }
+            .info-row svg { color: #34D399; }
             
             .booking-pricing {
-              padding: 1.25rem 1.5rem;
-              border-bottom: 1px solid #334155;
+              padding: 1rem 1.25rem;
+              border-bottom: 1px solid #2A2A2A;
             }
             
             .price-row {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              color: #94a3b8;
-              font-size: 0.95rem;
-              margin-bottom: 0.5rem;
+              color: #A3A3A3;
+              font-size: 0.9rem;
+              margin-bottom: 0.35rem;
             }
             
-            .price-row:last-child {
-              margin-bottom: 0;
-            }
+            .price-row:last-child { margin-bottom: 0; }
             
             .price-value {
-              color: #60a5fa;
+              color: #34D399;
               font-weight: 700;
-              font-size: 1.25rem;
+              font-size: 1.15rem;
               display: flex;
               align-items: center;
               gap: 2px;
             }
             
-            .price-row.deposit span:last-child {
-              color: #34d399;
-              font-weight: 600;
-              display: flex;
-              align-items: center;
-              gap: 2px;
-            }
-            
-            .pickup-details {
-              padding: 1.25rem 1.5rem;
-              background: #0f172a;
-              border-bottom: 1px solid #334155;
+            .pickup-section {
+              padding: 1rem 1.25rem;
+              background: #0A0A0A;
+              border-bottom: 1px solid #2A2A2A;
             }
             
             .pickup-header {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              color: #60a5fa;
+              color: #34D399;
               font-weight: 600;
-              font-size: 0.9rem;
-              cursor: pointer;
-              margin-bottom: 0.75rem;
-            }
-            
-            .expand-btn {
-              color: #94a3b8;
-              padding: 0;
               font-size: 0.85rem;
-              text-decoration: none;
+              cursor: pointer;
             }
             
-            .expand-btn:hover {
-              color: #60a5fa;
-            }
+            .expand-link { color: #A3A3A3; font-size: 0.8rem; font-weight: 400; }
             
-            .pickup-content {
-              margin-top: 1rem;
-              padding-top: 1rem;
-              border-top: 1px solid #334155;
-            }
+            .pickup-content { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #2A2A2A; }
             
             .detail-row {
               display: flex;
-              margin-bottom: 0.75rem;
-              font-size: 0.9rem;
-            }
-            
-            .detail-row:last-child {
-              margin-bottom: 0;
-            }
-            
-            .detail-label {
-              width: 100px;
-              color: #64748b;
-              display: flex;
               align-items: center;
-            }
-            
-            .detail-value {
-              flex: 1;
-              color: #cbd5e1;
-              display: flex;
-              align-items: center;
-              flex-wrap: wrap;
               gap: 0.5rem;
+              color: #A3A3A3;
+              font-size: 0.85rem;
+              margin-bottom: 0.4rem;
             }
             
-            .contact-method {
-              background: #334155;
-              color: #94a3b8;
-              font-weight: 400;
-              padding: 2px 8px;
-              border-radius: 6px;
-              font-size: 0.75rem;
-            }
+            .detail-row svg { color: #737373; }
             
             .pickup-pending {
-              background: rgba(245, 158, 11, 0.1);
-              border: 1px solid rgba(245, 158, 11, 0.3);
-              border-radius: 10px;
-              padding: 0.75rem 1rem;
-              color: #fbbf24;
-              font-size: 0.85rem;
+              background: rgba(245,158,11,0.06);
+              border: 1px solid rgba(245,158,11,0.15);
+              border-radius: 8px;
+              padding: 0.5rem 0.75rem;
+              color: #F59E0B;
+              font-size: 0.8rem;
               display: flex;
               align-items: center;
-              margin-top: 0.5rem;
+              gap: 0.4rem;
             }
             
-            .booking-actions {
-              padding: 1.25rem 1.5rem;
-              flex: 1;
-            }
+            .booking-actions { padding: 1rem 1.25rem; flex: 1; }
             
-            .btn-return {
-              background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-              color: white;
-              border: none;
-              border-radius: 10px;
-              padding: 0.7rem 1rem;
+            .btn-mint {
+              background: #10B981;
+              color: #121212;
+              border: 1px solid #10B981;
+              border-radius: 8px;
+              padding: 0.55rem 1rem;
               font-weight: 600;
-              transition: all 0.3s ease;
-              box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+              font-size: 0.85rem;
             }
             
-            .btn-return:hover {
-              background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-              transform: translateY(-1px);
-              box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-            }
+            .btn-mint:hover { background: #059669; border-color: #059669; color: #121212; }
+            .btn-mint:disabled { opacity: 0.5; }
             
-            .btn-cancel {
+            .btn-outline-danger {
               background: transparent;
-              color: #ef4444;
-              border: 1px solid rgba(239, 68, 68, 0.3);
-              border-radius: 10px;
-              padding: 0.7rem 1rem;
-              font-weight: 600;
-              transition: all 0.3s ease;
+              color: #EF4444;
+              border: 1px solid rgba(239,68,68,0.2);
+              border-radius: 8px;
+              padding: 0.55rem 1rem;
+              font-weight: 500;
+              font-size: 0.85rem;
             }
             
-            .btn-cancel:hover {
-              background: rgba(239, 68, 68, 0.1);
-              border-color: #ef4444;
-              color: #f87171;
-            }
+            .btn-outline-danger:hover { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.4); color: #F87171; }
             
             .btn-delete {
               background: transparent;
-              color: #64748b;
-              border: 1px solid #334155;
-              border-radius: 10px;
-              padding: 0.6rem 1rem;
+              color: #737373;
+              border: 1px solid #2A2A2A;
+              border-radius: 8px;
+              padding: 0.45rem 0.75rem;
               font-weight: 500;
-              font-size: 0.85rem;
-              transition: all 0.3s ease;
+              font-size: 0.8rem;
             }
             
-            .btn-delete:hover {
-              background: rgba(239, 68, 68, 0.1);
-              border-color: #ef4444;
-              color: #ef4444;
-            }
+            .btn-delete:hover { border-color: #3A3A3A; color: #EF4444; }
             
             .booking-footer {
-              padding: 0.75rem 1.5rem;
-              background: #0f172a;
-              color: #64748b;
-              font-size: 0.8rem;
+              padding: 0.6rem 1.25rem;
+              background: #0A0A0A;
+              color: #737373;
+              font-size: 0.75rem;
               text-align: center;
-              border-top: 1px solid #334155;
+              border-top: 1px solid #2A2A2A;
             }
             
             .empty-state {
               text-align: center;
-              padding: 4rem 2rem;
-              background: #1e293b;
-              border: 2px dashed #334155;
-              border-radius: 20px;
+              padding: 3rem 2rem;
+              background: #1E1E1E;
+              border: 1px solid #2A2A2A;
+              border-radius: 14px;
             }
             
             .empty-icon {
-              width: 80px;
-              height: 80px;
-              border-radius: 20px;
-              background: #0f172a;
+              width: 64px; height: 64px;
+              border-radius: 12px;
+              background: #0A0A0A;
               display: flex;
               align-items: center;
               justify-content: center;
-              margin: 0 auto 1.5rem;
-              border: 1px solid #334155;
-              color: #60a5fa;
-              font-size: 2rem;
+              margin: 0 auto 1rem;
+              border: 1px solid #2A2A2A;
+              color: #34D399;
+              font-size: 1.5rem;
             }
             
-            .empty-state h5 {
-              color: #f1f5f9;
-              font-weight: 700;
-              margin-bottom: 0.5rem;
-            }
-            
-            .empty-state p {
-              color: #94a3b8;
-              margin-bottom: 0;
-            }
+            .empty-state h5 { color: #F5F5F5; font-weight: 600; }
+            .empty-state p { color: #A3A3A3; font-size: 0.9rem; }
             
             .nav-tabs-custom {
-              border-bottom: 1px solid #334155;
-              gap: 0.5rem;
+              border-bottom: 1px solid #2A2A2A;
+              gap: 0.25rem;
             }
             
             .nav-tabs-custom .nav-link {
-              color: #94a3b8 !important;
+              color: #A3A3A3 !important;
               background: transparent;
               border: none !important;
-              padding: 0.75rem 1.5rem;
-              border-radius: 12px;
+              padding: 0.6rem 1.25rem;
+              border-radius: 8px;
               font-weight: 500;
-              transition: all 0.2s ease;
+              font-size: 0.9rem;
             }
             
-            .nav-tabs-custom .nav-link:hover {
-              color: #60a5fa !important;
-              background: rgba(59, 130, 246, 0.1);
-            }
+            .nav-tabs-custom .nav-link:hover { color: #34D399 !important; }
             
             .nav-tabs-custom .nav-link.active {
-              background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
-              color: white !important;
+              background: #10B981 !important;
+              color: #121212 !important;
+              font-weight: 600;
             }
             
-            .loading-state {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              min-height: 400px;
-              color: #94a3b8;
+            .btn-browse {
+              background: #10B981;
+              color: #121212;
+              border: 1px solid #10B981;
+              border-radius: 10px;
+              padding: 0.65rem 1.5rem;
+              font-weight: 600;
             }
             
-            .loading-state .spinner-border {
-              color: #60a5fa !important;
-              width: 3rem;
-              height: 3rem;
-              margin-bottom: 1rem;
-            }
-            
-            .error-alert {
-              background: rgba(239, 68, 68, 0.1);
-              border: 1px solid rgba(239, 68, 68, 0.3);
-              border-radius: 16px;
-              color: #fca5a5;
-              padding: 2rem;
-            }
+            .btn-browse:hover { background: #059669; border-color: #059669; color: #121212; }
             
             .modal-dark .modal-content {
-              background: #1e293b;
-              color: #e2e8f0;
-              border: 1px solid #334155;
-              border-radius: 20px;
+              background: #1E1E1E;
+              color: #E5E5E5;
+              border: 1px solid #2A2A2A;
+              border-radius: 14px;
             }
             
-            .modal-dark .modal-header {
-              border-bottom: 1px solid #334155;
-            }
-            
-            .modal-dark .modal-footer {
-              border-top: 1px solid #334155;
-            }
-            
-            .modal-dark .btn-close {
-              filter: invert(1);
-            }
-            
-            .browse-btn {
-              background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-              color: white;
-              border: none;
-              border-radius: 12px;
-              padding: 0.75rem 2rem;
-              font-weight: 600;
-              box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-              transition: all 0.3s ease;
-            }
-            
-            .browse-btn:hover {
-              background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-              transform: translateY(-2px);
-              box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-            }
+            .modal-dark .modal-header { border-bottom: 1px solid #2A2A2A; padding: 1.25rem 1.25rem 0.75rem; }
+            .modal-dark .modal-footer { border-top: 1px solid #2A2A2A; padding: 0.75rem 1.25rem 1.25rem; }
+            .modal-dark .btn-close { filter: invert(1); }
           `}
         </style>
 
         <Container className="py-4">
           
-          {/* Page Header */}
           <div className="page-header">
-            <h1 className="fw-extrabold mb-2" style={{ fontSize: '2.5rem' }}>
-              <span className="gradient-text">My Bookings</span>
-            </h1>
-            <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
-              Track and manage all your tool rentals in one place
-            </p>
+            <h1>My Bookings</h1>
+            <p style={{ color: '#A3A3A3', fontSize: '0.95rem' }}>Track and manage all your tool rentals</p>
           </div>
           
           {!hasAnyBookings ? (
             <div className="empty-state">
-              <div className="empty-icon">
-                <FaBoxOpen size={40} />
-              </div>
+              <div className="empty-icon"><FaBoxOpen size={28} /></div>
               <h4>No Bookings Yet</h4>
-              <p style={{ marginBottom: '1.5rem' }}>
-                You haven't rented any tools yet. Ready to start building?
-              </p>
-              <Button className="browse-btn" onClick={() => navigate('/browse')}>
-                <FaSearch className="me-2" />
-                Browse Available Tools
-                <FaArrowRight className="ms-2" />
+              <p>You haven't rented any tools yet. Ready to start building?</p>
+              <Button className="btn-browse" onClick={() => navigate('/browse')}>
+                <FaSearch className="me-2" size={14} /> Browse Tools <FaArrowRight className="ms-2" size={12} />
               </Button>
             </div>
           ) : (
             <Tabs defaultActiveKey="pending" className="nav-tabs-custom mb-4">
-              <Tab eventKey="pending" title={`Pending (${pendingBookings.length})`}>
-                {pendingBookings.length === 0 
-                  ? renderEmptyState(<FaClock size={40} />, "No Pending Requests", "You have no bookings awaiting approval.")
-                  : <Row className="mt-3 g-4">{pendingBookings.map(renderBookingCard)}</Row>}
-              </Tab>
-
-              <Tab eventKey="confirmed" title={`Confirmed (${confirmedBookings.length})`}>
-                {confirmedBookings.length === 0 
-                  ? renderEmptyState(<FaCheckCircle size={40} />, "No Confirmed Bookings", "You have no upcoming confirmed rentals.")
-                  : <Row className="mt-3 g-4">{confirmedBookings.map(renderBookingCard)}</Row>}
-              </Tab>
-
-              <Tab eventKey="rejected" title={`Rejected (${rejectedBookings.length})`}>
-                {rejectedBookings.length === 0 
-                  ? renderEmptyState(<FaTimesCircle size={40} />, "No Rejected Requests", "None of your booking requests have been rejected.")
-                  : <Row className="mt-3 g-4">{rejectedBookings.map(renderBookingCard)}</Row>}
-              </Tab>
-
-              <Tab eventKey="cancelled" title={`Cancelled (${cancelledBookings.length})`}>
-                {cancelledBookings.length === 0 
-                  ? renderEmptyState(<FaTimesCircle size={40} />, "No Cancelled Bookings", "You haven't cancelled any of your requests.")
-                  : <Row className="mt-3 g-4">{cancelledBookings.map(renderBookingCard)}</Row>}
-              </Tab>
-
-              <Tab eventKey="completed" title={`Completed (${completedBookings.length})`}>
-                {completedBookings.length === 0 
-                  ? renderEmptyState(<FaCheckCircle size={40} />, "No Completed Bookings", "Your history of successfully returned tools will appear here.")
-                  : <Row className="mt-3 g-4">{completedBookings.map(renderBookingCard)}</Row>}
-              </Tab>
+              {[
+                { key: 'pending', data: pendingBookings, icon: <FaClock size={28} />, emptyTitle: 'No Pending Requests', emptyMsg: 'No bookings awaiting approval.' },
+                { key: 'confirmed', data: confirmedBookings, icon: <FaCheckCircle size={28} />, emptyTitle: 'No Confirmed Bookings', emptyMsg: 'No upcoming confirmed rentals.' },
+                { key: 'rejected', data: rejectedBookings, icon: <FaTimesCircle size={28} />, emptyTitle: 'No Rejected Requests', emptyMsg: 'None of your requests have been rejected.' },
+                { key: 'cancelled', data: cancelledBookings, icon: <FaTimesCircle size={28} />, emptyTitle: 'No Cancelled Bookings', emptyMsg: 'You haven\'t cancelled any requests.' },
+                { key: 'completed', data: completedBookings, icon: <FaCheckCircle size={28} />, emptyTitle: 'No Completed Bookings', emptyMsg: 'Your history of returned tools will appear here.' },
+              ].map(tab => (
+                <Tab key={tab.key} eventKey={tab.key} title={`${tab.key.charAt(0).toUpperCase() + tab.key.slice(1)} (${tab.data.length})`}>
+                  {tab.data.length === 0 
+                    ? renderEmptyState(tab.icon, tab.emptyTitle, tab.emptyMsg)
+                    : <Row className="mt-3 g-4">{tab.data.map(renderBookingCard)}</Row>}
+                </Tab>
+              ))}
             </Tabs>
           )}
         </Container>
 
-        {/* Delete Confirmation Modal */}
-        <Modal 
-          show={showDeleteModal} 
-          onHide={() => setShowDeleteModal(false)} 
-          centered 
-          className="modal-dark"
-        >
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered className="modal-dark">
           <Modal.Header closeButton>
-            <Modal.Title style={{ color: '#ef4444', fontWeight: 700 }}>
-              Delete Record
-            </Modal.Title>
+            <Modal.Title style={{ color: '#EF4444', fontWeight: 600, fontSize: '1.1rem' }}>Delete Record</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <p style={{ color: '#e2e8f0', marginBottom: '1rem' }}>
-              Are you sure you want to delete this booking record? This action cannot be undone.
-            </p>
+            <p style={{ color: '#E5E5E5', marginBottom: '0.75rem', fontSize: '0.9rem' }}>Delete this booking record? This cannot be undone.</p>
             {bookingToDelete && (
-              <div style={{
-                background: '#0f172a',
-                border: '1px solid #334155',
-                borderRadius: '12px',
-                padding: '1rem'
-              }}>
-                <strong style={{ color: '#f1f5f9', display: 'block', marginBottom: '0.5rem' }}>
-                  {bookingToDelete.itemName}
-                </strong>
-                <small style={{ color: '#94a3b8' }}>
-                  <FaCalendarAlt className="me-2" size={12} />
-                  {formatDate(bookingToDelete.startDate)} - {formatDate(bookingToDelete.endDate)}
-                </small>
+              <div style={{ background: '#0A0A0A', border: '1px solid #2A2A2A', borderRadius: '10px', padding: '0.75rem 1rem' }}>
+                <strong style={{ color: '#F5F5F5', display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>{bookingToDelete.itemName}</strong>
+                <small style={{ color: '#A3A3A3' }}><FaCalendarAlt className="me-1" size={11} />{formatDate(bookingToDelete.startDate)} - {formatDate(bookingToDelete.endDate)}</small>
               </div>
             )}
           </Modal.Body>
           <Modal.Footer>
-            <Button 
-              style={{
-                background: 'transparent',
-                color: '#94a3b8',
-                border: '1px solid #334155',
-                borderRadius: '10px',
-                padding: '0.6rem 1.5rem',
-                fontWeight: 600
-              }}
-              onClick={() => setShowDeleteModal(false)}
-            >
-              Keep Record
-            </Button>
-            <Button 
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '0.6rem 1.5rem',
-                fontWeight: 600
-              }}
-              onClick={handleDeleteBooking} 
-              disabled={processing === bookingToDelete?.id}
-            >
-              {processing === bookingToDelete?.id ? (
-                <Spinner animation="border" size="sm" />
-              ) : (
-                'Delete'
-              )}
+            <Button className="btn-delete" style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }} onClick={() => setShowDeleteModal(false)}>Keep</Button>
+            <Button style={{ background: '#EF4444', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.5rem 1.25rem', fontWeight: 600, fontSize: '0.85rem' }} onClick={handleDeleteBooking} disabled={processing === bookingToDelete?.id}>
+              {processing === bookingToDelete?.id ? <Spinner animation="border" size="sm" /> : 'Delete'}
             </Button>
           </Modal.Footer>
         </Modal>
