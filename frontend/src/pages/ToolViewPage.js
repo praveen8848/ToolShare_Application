@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Badge, Image, Alert, Spinner, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Image, Alert, Spinner, Modal } from 'react-bootstrap';
 import { 
   FaArrowLeft, FaEdit, FaTrash, FaMapMarkerAlt, FaCalendarAlt, 
-  FaUser, FaRupeeSign, FaImage, FaPhone, FaInfoCircle, FaSearchPlus, 
-  FaTags, FaEye, FaShieldAlt, FaCheckCircle, FaTools 
+  FaRupeeSign, FaPhone, FaInfoCircle, FaEye, FaShieldAlt, FaTools 
 } from 'react-icons/fa';
 import toolService from '../services/toolService';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatDate } from '../utils/formatters';
 import { toast } from 'react-toastify';
 
 const ToolViewPage = () => {
@@ -20,9 +19,7 @@ const ToolViewPage = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
 
-  useEffect(() => {
-    loadTool();
-  }, [id]);
+  useEffect(() => { loadTool(); }, [id]);
 
   const loadTool = async () => {
     setLoading(true);
@@ -32,9 +29,7 @@ const ToolViewPage = () => {
     } catch (error) {
       toast.error('Failed to load tool details');
       navigate('/my-tools');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleDelete = async () => {
@@ -46,50 +41,26 @@ const ToolViewPage = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete tool');
       setShowDeleteModal(false);
-    } finally {
-      setDeleting(false);
-    }
+    } finally { setDeleting(false); }
   };
 
   const getStatusBadge = (status) => {
-    const variants = {
-      'AVAILABLE': { bg: '#10b981', color: '#ffffff', text: 'Available', icon: '🟢' },
-      'BORROWED': { bg: '#f59e0b', color: '#0f172a', text: 'Borrowed', icon: '🟡' },
-      'MAINTENANCE': { bg: '#ef4444', color: '#ffffff', text: 'Maintenance', icon: '🔴' },
+    const config = {
+      'AVAILABLE':   { bg: 'rgba(16,185,129,0.1)', color: '#34D399', border: 'rgba(16,185,129,0.2)', text: 'Available' },
+      'BORROWED':    { bg: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: 'rgba(245,158,11,0.2)', text: 'Borrowed' },
+      'MAINTENANCE': { bg: 'rgba(239,68,68,0.1)', color: '#EF4444', border: 'rgba(239,68,68,0.2)', text: 'Maintenance' },
     };
-    const style = variants[status] || { bg: '#64748b', color: '#ffffff', text: status, icon: '' };
-    return (
-      <Badge style={{ 
-        backgroundColor: style.bg, 
-        color: style.color,
-        padding: '8px 16px',
-        borderRadius: '12px',
-        fontWeight: 600,
-        fontSize: '0.85rem',
-        border: '1px solid rgba(255,255,255,0.1)'
-      }}>
-        {style.icon} {style.text}
-      </Badge>
-    );
+    const { bg, color, border, text } = config[status] || { bg: 'rgba(115,115,115,0.1)', color: '#737373', border: 'rgba(115,115,115,0.2)', text: status };
+    return <span style={{ background: bg, color, border: `1px solid ${border}`, padding: '4px 10px', borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem' }}>{text}</span>;
   };
 
   if (loading) {
     return (
       <div className="tool-view-wrapper">
-        <style>
-          {`
-            .tool-view-wrapper {
-              background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-              min-height: 100vh;
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            }
-          `}
-        </style>
+        <style>{`.tool-view-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
         <Container className="py-5 text-center">
-          <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
-            <Spinner animation="border" style={{ color: '#60a5fa', width: '3rem', height: '3rem' }} />
-            <h5 className="mt-3" style={{ color: '#94a3b8' }}>Loading your tool...</h5>
-          </div>
+          <Spinner animation="border" style={{ color: '#34D399', width: '3rem', height: '3rem' }} />
+          <p style={{ color: '#A3A3A3', marginTop: '1rem' }}>Loading your tool...</p>
         </Container>
       </div>
     );
@@ -98,31 +69,13 @@ const ToolViewPage = () => {
   if (!tool) {
     return (
       <div className="tool-view-wrapper">
+        <style>{`.tool-view-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
         <Container className="py-5">
-          <Alert style={{ 
-            backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-            color: '#fca5a5',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '20px',
-            padding: '2rem'
-          }}>
-            <Alert.Heading className="fw-bold">Tool Not Found</Alert.Heading>
-            <p>We couldn't find this tool in your inventory.</p>
-            <Button 
-              className="mt-2"
-              style={{
-                background: 'transparent',
-                color: '#fca5a5',
-                border: '1px solid rgba(239, 68, 68, 0.5)',
-                borderRadius: '12px',
-                padding: '0.75rem 2rem',
-                fontWeight: 600
-              }}
-              onClick={() => navigate('/my-tools')}
-            >
-              Back to My Tools
-            </Button>
-          </Alert>
+          <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '14px', padding: '2rem', color: '#FCA5A5', textAlign: 'center', maxWidth: '500px', margin: '0 auto' }}>
+            <h4>Tool Not Found</h4>
+            <p style={{ color: '#A3A3A3', fontSize: '0.9rem' }}>We couldn't find this tool in your inventory.</p>
+            <Button style={{ background: '#10B981', color: '#121212', border: 'none', borderRadius: '10px', padding: '0.6rem 1.5rem', fontWeight: 600 }} onClick={() => navigate('/my-tools')}>Back to My Tools</Button>
+          </div>
         </Container>
       </div>
     );
@@ -135,540 +88,313 @@ const ToolViewPage = () => {
       <style>
         {`
           .tool-view-wrapper {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: #121212;
             min-height: 100vh;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #e2e8f0;
+            color: #E5E5E5;
             padding-bottom: 3rem;
+            padding-top: 76px;
           }
           
-          .back-button {
-            color: #94a3b8;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            transition: all 0.3s ease;
+          .back-btn {
+            background: transparent;
+            color: #A3A3A3;
+            border: 1px solid #2A2A2A;
+            padding: 0.4rem 0.9rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
             display: inline-flex;
             align-items: center;
-            margin-bottom: 1.5rem;
-            border: 1px solid transparent;
-            background: transparent;
-          }
-          
-          .back-button:hover {
-            color: #60a5fa;
-            background: rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.2);
-          }
-          
-          .main-image-container {
-            position: relative;
-            overflow: hidden;
-            border-radius: 20px;
+            gap: 0.4rem;
             cursor: pointer;
-            height: 400px;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 1.5rem;
+            transition: all 0.2s;
           }
           
-          .main-image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
+          .back-btn:hover { border-color: #3A3A3A; color: #E5E5E5; }
+          
+          .image-container {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            height: 380px;
+            border: 1px solid #2A2A2A;
           }
           
-          .main-image-container:hover img {
-            transform: scale(1.05);
-          }
+          .image-container img { width: 100%; height: 100%; object-fit: cover; }
           
           .image-overlay {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 1.5rem;
-            background: linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent);
-            color: white;
+            bottom: 0; left: 0; right: 0;
+            padding: 1rem;
+            background: linear-gradient(to top, rgba(18,18,18,0.9), transparent);
+            color: #A3A3A3;
+            font-size: 0.8rem;
           }
           
-          .thumbnail-container {
-            border-radius: 12px;
+          .thumbnail {
+            border-radius: 10px;
             overflow: hidden;
-            height: 100px;
+            height: 90px;
             cursor: pointer;
-            border: 1px solid #334155;
-            transition: all 0.3s ease;
+            border: 1px solid #2A2A2A;
           }
           
-          .thumbnail-container:hover {
-            border-color: #60a5fa;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-          }
+          .thumbnail img { width: 100%; height: 100%; object-fit: cover; }
           
-          .thumbnail-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-          }
-          
-          .thumbnail-container:hover img {
-            transform: scale(1.1);
-          }
-          
-          .stats-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 0.75rem 1.25rem;
+          .stats-row {
             display: flex;
-            align-items: center;
             gap: 0.75rem;
           }
           
-          .pricing-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+          .stat-chip {
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
           }
           
-          .private-settings-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+          .detail-card {
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
           }
           
-          .action-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            border-top: 4px solid #3b82f6;
+          .category-badge {
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.15);
+            border-radius: 6px;
+            padding: 0.25rem 0.75rem;
+            color: #34D399;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 0.5rem;
           }
           
           .info-row {
             display: flex;
             align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-          }
-          
-          .info-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #60a5fa;
-            flex-shrink: 0;
-          }
-          
-          .category-badge {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 20px;
-            padding: 0.4rem 1rem;
-            color: #60a5fa;
-            font-size: 0.85rem;
-            font-weight: 500;
-            display: inline-block;
+            gap: 0.75rem;
             margin-bottom: 0.75rem;
           }
           
-          .btn-edit {
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
+          .info-icon {
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            background: rgba(16,185,129,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #34D399;
+            flex-shrink: 0;
+          }
+          
+          .privacy-note {
+            background: rgba(16,185,129,0.04);
+            border: 1px solid rgba(16,185,129,0.1);
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            color: #34D399;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+          }
+          
+          .price-tag { color: #34D399; font-weight: 700; }
+          
+          .btn-mint {
+            background: #10B981;
+            color: #121212;
+            border: 1px solid #10B981;
+            border-radius: 10px;
             font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            padding: 0.6rem 1.25rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
           }
           
-          .btn-edit:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-            color: white;
-          }
+          .btn-mint:hover { background: #059669; border-color: #059669; color: #121212; }
           
-          .btn-delete {
+          .btn-danger-outline {
             background: transparent;
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            transition: all 0.3s ease;
+            color: #EF4444;
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 10px;
+            font-weight: 500;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
           }
           
-          .btn-delete:hover {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: #ef4444;
-            color: #f87171;
-          }
+          .btn-danger-outline:hover { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.4); color: #F87171; }
           
-          .privacy-alert {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+          .empty-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 380px;
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
             border-radius: 14px;
-            padding: 1rem;
-            color: #93c5fd;
-            margin-bottom: 1.25rem;
+            color: #737373;
           }
           
           .modal-dark .modal-content {
-            background: #1e293b;
-            color: #e2e8f0;
-            border: 1px solid #334155;
+            background: #1E1E1E;
+            border: 1px solid #2A2A2A;
+            border-radius: 14px;
+            color: #E5E5E5;
           }
           
-          .modal-dark .modal-header {
-            border-bottom: 1px solid #334155;
-          }
-          
-          .modal-dark .modal-footer {
-            border-top: 1px solid #334155;
-          }
-          
-          .modal-dark .btn-close {
-            filter: invert(1);
-          }
-          
-          .price-value {
-            color: #60a5fa;
-            font-weight: 700;
-          }
+          .modal-dark .modal-header { border-bottom: 1px solid #2A2A2A; padding: 1.25rem; }
+          .modal-dark .modal-footer { border-top: 1px solid #2A2A2A; padding: 1rem 1.25rem; }
+          .modal-dark .btn-close { filter: invert(1); }
         `}
       </style>
 
       <Container className="py-4">
-        <button 
-          className="back-button"
-          onClick={() => navigate('/my-tools')}
-        >
-          <FaArrowLeft className="me-2" /> Back to Inventory
+        <button className="back-btn" onClick={() => navigate('/my-tools')}>
+          <FaArrowLeft size={14} /> Back to Inventory
         </button>
 
         <Row className="g-4">
-          {/* LEFT COLUMN: IMAGES */}
           <Col lg={7}>
             {tool.images && tool.images.length > 0 ? (
               <div className="d-flex flex-column gap-3">
-                <div 
-                  className="main-image-container"
-                  onClick={() => {
-                    setSelectedImage(tool.images[0]);
-                    setShowImageModal(true);
-                  }}
-                >
+                <div className="image-container" onClick={() => { setSelectedImage(tool.images[0]); setShowImageModal(true); }}>
                   <Image src={tool.images[0]} alt={tool.name} />
-                  <div className="image-overlay">
-                    <small>
-                      <FaSearchPlus className="me-1" /> Click to expand
-                    </small>
-                  </div>
+                  <div className="image-overlay">Click to expand</div>
                 </div>
-
                 {tool.images.length > 1 && (
-                  <Row className="g-2 mt-1">
+                  <Row className="g-2">
                     {tool.images.slice(1, 4).map((img, idx) => (
                       <Col key={idx} xs={4}>
-                        <div 
-                          className="thumbnail-container"
-                          onClick={() => {
-                            setSelectedImage(img);
-                            setShowImageModal(true);
-                          }}
-                        >
+                        <div className="thumbnail" onClick={() => { setSelectedImage(img); setShowImageModal(true); }}>
                           <Image src={img} alt={`${tool.name} ${idx + 1}`} />
                         </div>
                       </Col>
                     ))}
-                    {tool.images.length > 4 && (
-                      <Col xs={4}>
-                        <div 
-                          className="thumbnail-container position-relative"
-                          onClick={() => {
-                            setSelectedImage(tool.images[4]);
-                            setShowImageModal(true);
-                          }}
-                        >
-                          <Image src={tool.images[4]} style={{ opacity: 0.5 }} />
-                          <div className="position-absolute top-50 start-50 translate-middle fw-bold fs-5 text-white">
-                            +{tool.images.length - 4}
-                          </div>
-                        </div>
-                      </Col>
-                    )}
                   </Row>
                 )}
               </div>
             ) : (
-              <div className="main-image-container d-flex align-items-center justify-content-center" style={{ cursor: 'default' }}>
-                <div className="text-center" style={{ color: '#64748b' }}>
-                  <FaTools size={50} className="mb-3 opacity-50" />
-                  <h5>No photos uploaded</h5>
-                </div>
+              <div className="empty-image">
+                <div className="text-center"><FaTools size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} /><h5>No photos uploaded</h5></div>
               </div>
             )}
           </Col>
 
-          {/* RIGHT COLUMN: MANAGEMENT DASHBOARD */}
           <Col lg={5}>
-            <div className="d-flex flex-column h-100">
-              {/* Header Info */}
-              <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <div>
-                    <span className="category-badge">
-                      {tool.categoryName || 'Uncategorized'}
-                    </span>
-                    <h2 className="fw-bold mb-2" style={{ color: '#f1f5f9' }}>
-                      {tool.name}
-                    </h2>
-                  </div>
-                  <div>{getStatusBadge(tool.status)}</div>
+            <div className="mb-3">
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <span className="category-badge">{tool.categoryName || 'Uncategorized'}</span>
+                  <h2 style={{ color: '#F5F5F5', fontWeight: 700, fontSize: '1.5rem' }}>{tool.name}</h2>
+                </div>
+                {getStatusBadge(tool.status)}
+              </div>
+            </div>
+
+            <div className="stats-row mb-4">
+              <div className="stat-chip">
+                <FaEye size={14} style={{ color: '#34D399' }} />
+                <span style={{ color: '#F5F5F5', fontWeight: 600 }}>{tool.viewsCount || 0}</span>
+                <span style={{ color: '#A3A3A3', fontSize: '0.8rem' }}>Views</span>
+              </div>
+              <div className="stat-chip">
+                <FaCalendarAlt size={14} style={{ color: '#34D399' }} />
+                <span style={{ color: '#A3A3A3', fontSize: '0.8rem' }}>Listed {formatDate(tool.createdAt)}</span>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <h5 style={{ color: '#F5F5F5', fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.75rem' }}>Pricing</h5>
+              <Row className="g-3">
+                <Col xs={6}>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.8rem', marginBottom: '2px' }}>Daily Rate</p>
+                  <h5 className="price-tag mb-0 d-flex align-items-center"><FaRupeeSign size={14} className="me-1" />{tool.dailyRate?.toLocaleString('en-IN') || '0'}</h5>
+                </Col>
+                <Col xs={6}>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.8rem', marginBottom: '2px' }}>Weekly Rate</p>
+                  <p style={{ color: '#E5E5E5', marginBottom: 0, fontSize: '0.9rem' }}>{tool.weeklyRate ? <><FaRupeeSign size={10} />{tool.weeklyRate.toLocaleString('en-IN')}</> : '-'}</p>
+                </Col>
+                <Col xs={6}>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.8rem', marginBottom: '2px' }}>Monthly Rate</p>
+                  <p style={{ color: '#E5E5E5', marginBottom: 0, fontSize: '0.9rem' }}>{tool.monthlyRate ? <><FaRupeeSign size={10} />{tool.monthlyRate.toLocaleString('en-IN')}</> : '-'}</p>
+                </Col>
+                <Col xs={6}>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.8rem', marginBottom: '2px' }}>Deposit</p>
+                  <p style={{ color: '#E5E5E5', marginBottom: 0, fontSize: '0.9rem' }}>{tool.depositAmount ? <><FaRupeeSign size={10} />{tool.depositAmount.toLocaleString('en-IN')}</> : 'None'}</p>
+                </Col>
+              </Row>
+            </div>
+
+            <div className="detail-card">
+              <h5 style={{ color: '#F5F5F5', fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.75rem' }}>Private Settings</h5>
+              <div className="privacy-note"><FaInfoCircle className="me-2" size={12} />These details are only shared after you approve a booking.</div>
+              <div className="info-row">
+                <div className="info-icon"><FaMapMarkerAlt size={13} /></div>
+                <div>
+                  <h6 style={{ color: '#F5F5F5', fontWeight: 600, fontSize: '0.85rem', marginBottom: '2px' }}>Public Area</h6>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.85rem', marginBottom: 0 }}>{locationString || 'Not specified'}</p>
                 </div>
               </div>
-
-              {/* Performance Stats */}
-              <div className="d-flex gap-3 mb-4">
-                <div className="stats-card">
-                  <FaEye style={{ color: '#60a5fa', fontSize: '1.2rem' }} />
-                  <div>
-                    <span style={{ color: '#f1f5f9', fontWeight: 600, fontSize: '1.1rem' }}>
-                      {tool.viewsCount || 0}
-                    </span>
-                    <span style={{ color: '#94a3b8', fontSize: '0.85rem', marginLeft: '4px' }}>
-                      Views
-                    </span>
-                  </div>
-                </div>
-                <div className="stats-card">
-                  <FaCalendarAlt style={{ color: '#60a5fa', fontSize: '1.1rem' }} />
-                  <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
-                    Listed {formatDate(tool.createdAt)}
-                  </span>
+              <div className="info-row">
+                <div className="info-icon"><FaMapMarkerAlt size={13} /></div>
+                <div>
+                  <h6 style={{ color: '#F5F5F5', fontWeight: 600, fontSize: '0.85rem', marginBottom: '2px' }}>Pickup Instructions</h6>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.85rem', marginBottom: 0 }}>{tool.pickupInstructions || 'None'}</p>
                 </div>
               </div>
-
-              <hr style={{ borderColor: '#334155' }} />
-
-              <div className="my-4 flex-grow-1">
-                {/* Pricing Information */}
-                <h5 className="fw-bold mb-3 d-flex align-items-center" style={{ color: '#f1f5f9' }}>
-                  <FaTags className="me-2" style={{ color: '#60a5fa' }} /> Pricing
-                </h5>
-                <div className="pricing-card">
-                  <Row className="g-3">
-                    <Col xs={6}>
-                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Daily Rate</p>
-                      <h5 className="price-value mb-0 d-flex align-items-center">
-                        <FaRupeeSign size={16} className="me-1" />
-                        {tool.dailyRate?.toLocaleString('en-IN') || '0'}
-                      </h5>
-                    </Col>
-                    <Col xs={6}>
-                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Weekly Rate</p>
-                      <h6 style={{ color: '#e2e8f0' }} className="mb-0">
-                        {tool.weeklyRate ? (
-                          <><FaRupeeSign size={12} className="me-1" />{tool.weeklyRate.toLocaleString('en-IN')}</>
-                        ) : '-'}
-                      </h6>
-                    </Col>
-                    <Col xs={6}>
-                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Monthly Rate</p>
-                      <h6 style={{ color: '#e2e8f0' }} className="mb-0">
-                        {tool.monthlyRate ? (
-                          <><FaRupeeSign size={12} className="me-1" />{tool.monthlyRate.toLocaleString('en-IN')}</>
-                        ) : '-'}
-                      </h6>
-                    </Col>
-                    <Col xs={6}>
-                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>Security Deposit</p>
-                      <h6 style={{ color: '#e2e8f0' }} className="mb-0">
-                        {tool.depositAmount ? (
-                          <><FaRupeeSign size={12} className="me-1" />{tool.depositAmount.toLocaleString('en-IN')}</>
-                        ) : 'None'}
-                      </h6>
-                    </Col>
-                  </Row>
-                </div>
-
-                {/* Private Settings */}
-                <h5 className="fw-bold mb-3 d-flex align-items-center" style={{ color: '#f1f5f9' }}>
-                  <FaShieldAlt className="me-2" style={{ color: '#60a5fa' }} /> Private Settings
-                </h5>
-                <div className="private-settings-card">
-                  <div className="privacy-alert">
-                    <FaInfoCircle className="me-2" />
-                    <span>These details are only shared with borrowers <strong>after</strong> you approve their request.</span>
-                  </div>
-                  
-                  <div className="info-row">
-                    <div className="info-icon">
-                      <FaMapMarkerAlt size={16} />
-                    </div>
-                    <div>
-                      <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}>Public Search Area</h6>
-                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
-                        {locationString || 'Not specified'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="info-row">
-                    <div className="info-icon">
-                      <FaMapMarkerAlt size={16} />
-                    </div>
-                    <div>
-                      <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}>Exact Pickup Instructions</h6>
-                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
-                        {tool.pickupInstructions || 'No instructions provided.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="info-row">
-                    <div className="info-icon">
-                      <FaPhone size={16} />
-                    </div>
-                    <div>
-                      <h6 style={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}>Contact Info</h6>
-                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: 0 }}>
-                        {tool.ownerContact ? (
-                          <>
-                            {tool.ownerContact} 
-                            <Badge style={{ 
-                              background: '#334155', 
-                              color: '#94a3b8',
-                              marginLeft: '8px',
-                              fontWeight: 400
-                            }}>
-                              {tool.contactMethod === 'BOTH' ? 'Call/Text' : tool.contactMethod}
-                            </Badge>
-                          </>
-                        ) : 'No contact provided'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="mb-4">
-                  <h5 className="fw-bold mb-2" style={{ color: '#f1f5f9' }}>Description</h5>
-                  <p style={{ color: '#94a3b8', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
-                    {tool.description || 'No description provided.'}
-                  </p>
+              <div className="info-row">
+                <div className="info-icon"><FaPhone size={13} /></div>
+                <div>
+                  <h6 style={{ color: '#F5F5F5', fontWeight: 600, fontSize: '0.85rem', marginBottom: '2px' }}>Contact</h6>
+                  <p style={{ color: '#A3A3A3', fontSize: '0.85rem', marginBottom: 0 }}>{tool.ownerContact ? <>{tool.ownerContact} <span style={{ background: '#2A2A2A', padding: '1px 6px', borderRadius: '4px', fontSize: '0.7rem', marginLeft: '4px' }}>{tool.contactMethod === 'BOTH' ? 'Call/Text' : tool.contactMethod}</span></> : 'None'}</p>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="action-card">
-                <Card.Body className="p-3">
-                  <div className="d-flex gap-2">
-                    <Button
-                      className="btn-edit flex-grow-1"
-                      onClick={() => navigate(`/edit-tool/${tool.id}`)}
-                    >
-                      <FaEdit className="me-2" /> Edit Tool
-                    </Button>
-                    <Button
-                      className="btn-delete"
-                      onClick={() => setShowDeleteModal(true)}
-                    >
-                      <FaTrash />
-                    </Button>
-                  </div>
-                </Card.Body>
-              </div>
+            <div className="detail-card">
+              <h5 style={{ color: '#F5F5F5', fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.5rem' }}>Description</h5>
+              <p style={{ color: '#A3A3A3', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-line', marginBottom: 0 }}>{tool.description || 'No description provided.'}</p>
+            </div>
 
+            <div className="d-flex gap-2 mt-3">
+              <Button className="btn-mint flex-grow-1" onClick={() => navigate(`/edit-tool/${tool.id}`)}><FaEdit className="me-2" size={14} /> Edit Tool</Button>
+              <Button className="btn-danger-outline" onClick={() => setShowDeleteModal(true)}><FaTrash size={14} /></Button>
             </div>
           </Col>
         </Row>
 
-        {/* Delete Confirmation Modal */}
-        <Modal 
-          show={showDeleteModal} 
-          onHide={() => setShowDeleteModal(false)} 
-          centered
-          className="modal-dark"
-        >
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered className="modal-dark">
           <Modal.Header closeButton>
-            <Modal.Title style={{ color: '#ef4444', fontWeight: 700 }}>Confirm Deletion</Modal.Title>
+            <Modal.Title style={{ color: '#EF4444', fontWeight: 600, fontSize: '1.1rem' }}>Confirm Deletion</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <p style={{ fontSize: '1.1rem', color: '#e2e8f0' }}>
-              Are you sure you want to delete <strong style={{ color: '#f1f5f9' }}>{tool.name}</strong>?
-            </p>
-            <Alert style={{ 
-              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-              color: '#fca5a5',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '12px'
-            }}>
-              <FaInfoCircle className="me-2" />
-              This action cannot be undone. The tool will be permanently removed.
-            </Alert>
+            <p style={{ color: '#E5E5E5' }}>Delete <strong style={{ color: '#F5F5F5' }}>{tool.name}</strong>? This cannot be undone.</p>
+            <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', padding: '0.5rem 0.75rem', color: '#FCA5A5', fontSize: '0.85rem' }}>This tool will be permanently removed.</div>
           </Modal.Body>
           <Modal.Footer>
-            <Button 
-              style={{
-                background: 'transparent',
-                color: '#94a3b8',
-                border: '1px solid #334155',
-                borderRadius: '10px',
-                padding: '0.6rem 1.5rem',
-                fontWeight: 600
-              }}
-              onClick={() => setShowDeleteModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              style={{
-                background: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '0.6rem 1.5rem',
-                fontWeight: 600
-              }}
-              onClick={handleDelete} 
-              disabled={deleting}
-            >
-              {deleting ? (
-                <><Spinner animation="border" size="sm" className="me-2" /> Deleting...</>
-              ) : (
-                'Yes, Delete'
-              )}
+            <Button style={{ background: 'transparent', color: '#A3A3A3', border: '1px solid #2A2A2A', borderRadius: '8px', padding: '0.5rem 1.25rem', fontWeight: 500, fontSize: '0.85rem' }} onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+            <Button style={{ background: '#EF4444', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.5rem 1.25rem', fontWeight: 600, fontSize: '0.85rem' }} onClick={handleDelete} disabled={deleting}>
+              {deleting ? <Spinner animation="border" size="sm" /> : 'Delete'}
             </Button>
           </Modal.Footer>
         </Modal>
 
-        {/* Image Zoom Modal */}
-        <Modal 
-          show={showImageModal} 
-          onHide={() => setShowImageModal(false)} 
-          centered 
-          size="xl"
-          className="modal-dark"
-        >
+        <Modal show={showImageModal} onHide={() => setShowImageModal(false)} centered size="xl" className="modal-dark">
           <Modal.Header closeButton />
-          <Modal.Body className="p-0 text-center" style={{ background: '#0f172a' }}>
-            <Image 
-              src={selectedImage} 
-              fluid 
-              style={{ maxHeight: '85vh', objectFit: 'contain' }}
-            />
+          <Modal.Body className="p-0 text-center" style={{ background: '#0A0A0A' }}>
+            <Image src={selectedImage} fluid style={{ maxHeight: '85vh', objectFit: 'contain' }} />
           </Modal.Body>
         </Modal>
       </Container>
