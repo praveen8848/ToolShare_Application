@@ -502,7 +502,7 @@ const BrowseToolsPage = () => {
         </div>
         
         {/* Results Header */}
-        <div className="results-header">
+        {/* <div className="results-header">
           <div className="results-count">
             {loading ? (
               <Spinner animation="border" size="sm" style={{ color: '#34D399', marginRight: '6px' }} />
@@ -514,10 +514,9 @@ const BrowseToolsPage = () => {
           {!loading && tools.length > 0 && (
             <div className="tool-count-badge">
               <FaRupeeSign size={10} />
-              <span>Starting from ₹100/day</span>
             </div>
           )}
-        </div>
+        </div> */}
         
         {/* Tools Grid */}
         <ToolGrid 
@@ -530,7 +529,7 @@ const BrowseToolsPage = () => {
         {/* Footer Note */}
         <div className="footer-note">
           <FaMapMarkerAlt className="me-1" size={11} />
-          Available in Mumbai, Delhi, Bangalore, Chennai, Kolkata & 45+ Indian cities •
+            You can list your tool as well, from power drills to party supplies.  
           <FaStar className="mx-2" size={11} color="#FBBF24" />
           Trusted by 5,000+ community members
         </div>
