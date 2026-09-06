@@ -1,0 +1,19 @@
+# Environment variables
+.env
+.env.*
+
+# IntelliJ
+.idea/
+*.iml
+
+# Java
+target/
+
+# Node
+node_modules/
+dist/
+.idea
+BACKEND_CODE_REVIEW.md
+
+recovered_README.md
+frontend/FIXES_COMPLETE.md

@@ -1,0 +1,62 @@
+/* Color Palette */
+:root {
+  /* Brand Colors */
+  --mint-primary: #10B981;
+  --mint-hover: #059669;
+  --mint-light: #34D399;
+  --mint-lighter: #6EE7B7;
+
+  /* Background Colors */
+  --bg-dark: #0F172A;
+  --bg-card: #1E293B;
+  --bg-card-hover: #334155;
+  --bg-input: #1E293B;
+  --bg-modal: #1E293B;
+  --bg-auth: #121212;
+
+  /* Text Colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-light: #E5E7EB;
+  --text-gray: #9CA3AF;
+
+  /* Border Colors */
+  --border-color: #334155;
+  --border-light: #475569;
+  --border-focus: var(--mint-primary);
+
+  /* Status Colors */
+  --status-success: #10B981;
+  --status-warning: #F59E0B;
+  --status-danger: #EF4444;
+  --status-info: #3B82F6;
+  --status-purple: #8B5CF6;
+  --status-gray: #6B7280;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}

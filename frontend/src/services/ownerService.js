@@ -13,12 +13,6 @@ const ownerService = {
     return response.data;
   },
 
-  // Approve a booking
-  approveBooking: async (bookingId) => {
-    const response = await api.put(`/api/bookings/${bookingId}/approve`);
-    return response.data;
-  },
-
   // Reject a booking
   rejectBooking: async (bookingId) => {
     const response = await api.put(`/api/bookings/${bookingId}/reject`);
@@ -39,19 +33,13 @@ const ownerService = {
 
     // Confirm return
     confirmReturn: async (bookingId) => {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const response = await api.post(`/api/bookings/${bookingId}/confirm-return`, {}, {
-        headers: { 'X-User-Id': user?.id }
-      });
+      const response = await api.post(`/api/bookings/${bookingId}/confirm-return`);
       return response.data;
     },
 
-    // Update the approveBooking method to accept pickup details
+    // Approve booking with pickup details
     approveBooking: async (bookingId, pickupDetails) => {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const response = await api.put(`/api/bookings/${bookingId}/approve`, pickupDetails, {
-        headers: { 'X-User-Id': user?.id }
-      });
+      const response = await api.put(`/api/bookings/${bookingId}/approve`, pickupDetails);
       return response.data;
     },
 };

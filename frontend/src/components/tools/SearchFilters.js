@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Button } from 'react-bootstrap';
 import { FaSearch, FaTimes, FaFilter, FaChevronDown, FaTag, FaTags } from 'react-icons/fa';
-import toolService from '../../services/toolService';
+import categoryService from '../../services/categoryService';
 
 const SearchFilters = ({ filters, onFilterChange, onReset }) => {
   const [categories, setCategories] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   const [localSearch, setLocalSearch] = useState(filters.search || '');
   const [localCategory, setLocalCategory] = useState(filters.category || '');
   const [categorySearch, setCategorySearch] = useState('');
@@ -14,10 +15,13 @@ const SearchFilters = ({ filters, onFilterChange, onReset }) => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const data = await toolService.getCategories();
+        const data = await categoryService.getCategories();
         setCategories(data.filter(cat => cat.isActive !== false));
+        setLoadError(null);
       } catch (error) {
         console.error('Failed to load categories:', error);
+        setLoadError('Unable to load categories');
+        setCategories([]);
       }
     };
     loadCategories();
@@ -62,7 +66,7 @@ const SearchFilters = ({ filters, onFilterChange, onReset }) => {
 
   const getSelectedCategoryDisplay = () => {
     if (!localCategory) return 'All Categories';
-    const category = categories.find(c => c.id == localCategory);
+    const category = categories.find(c => String(c.id) === String(localCategory));
     return category ? `${category.icon || ''} ${category.name}` : 'All Categories';
   };
 
@@ -290,7 +294,7 @@ const SearchFilters = ({ filters, onFilterChange, onReset }) => {
                 ) : (
                   <div className="categories-list">
                     {filteredCategories.map(cat => (
-                      <div key={cat.id} className={`category-option ${localCategory == cat.id ? 'selected' : ''}`} onClick={() => handleCategorySelect(cat.id)}>
+                      <div key={cat.id} className={`category-option ${String(localCategory) === String(cat.id) ? 'selected' : ''}`} onClick={() => handleCategorySelect(cat.id)}>
                         {cat.icon || ''} {categorySearch ? highlightMatch(cat.name, categorySearch) : cat.name}
                       </div>
                     ))}
@@ -324,7 +328,7 @@ const SearchFilters = ({ filters, onFilterChange, onReset }) => {
             {filters.category && (
               <span className="filter-badge">
                 <FaTag size={9} style={{ color: '#34D399' }} />
-                Category: {categories.find(c => c.id == filters.category)?.name || ''}
+                Category: {categories.find(c => String(c.id) === String(filters.category))?.name || ''}
                 <span className="badge-remove" onClick={() => { setLocalCategory(''); setCategorySearch(''); onFilterChange({ search: filters.search, category: '' }); }}>
                   <FaTimes size={9} />
                 </span>

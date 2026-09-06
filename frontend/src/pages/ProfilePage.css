@@ -1,0 +1,33 @@
+.profile-card {
+  background: #1E1E1E;
+  border: 1px solid #2A2A2A;
+  border-radius: 14px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+}
+.label { color: #737373; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.value { color: #E5E5E5; }
+.mint { color: #34D399; }
+.stat-box {
+  background: #0A0A0A;
+  border: 1px solid #2A2A2A;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+}
+.stat-num { font-size: 1.5rem; font-weight: 700; color: #F5F5F5; }
+.input-clean {
+  background: #0A0A0A;
+  border: 1px solid #2A2A2A;
+  color: #E5E5E5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  width: 200px;
+}
+.input-clean:focus { border-color: #10B981; outline: none; }
+.btn-sm { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid #2A2A2A; background: transparent; color: #A3A3A3; }
+.btn-sm:hover { border-color: #3A3A3A; color: #E5E5E5; }
+.btn-sm.mint { background: #10B981; color: #121212; border-color: #10B981; }
+.btn-sm.mint:hover { background: #059669; }
+.btn-sm:disabled { opacity: 0.5; }

@@ -7,6 +7,7 @@ import {
   FaPhone, FaRupeeSign, FaWrench, FaImages, FaShieldAlt
 } from 'react-icons/fa';
 import toolService from '../services/toolService';
+import categoryService from '../services/categoryService';
 import { toast } from 'react-toastify';
 
 const EditToolPage = () => {
@@ -33,7 +34,7 @@ const EditToolPage = () => {
     try {
       const [tool, categoriesData] = await Promise.all([
         toolService.getToolById(id),
-        toolService.getCategories()
+        categoryService.getCategories()
       ]);
       setFormData({
         name: tool.name || '', description: tool.description || '', categoryId: tool.categoryId || '',

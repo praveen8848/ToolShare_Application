@@ -89,30 +89,6 @@ const toolService = {
     const response = await api.patch(`/api/tools/${id}/status?status=${status}`);
     return response.data;
   },
-
-  // Get all categories
-  getCategories: async () => {
-    const response = await api.get('/api/categories');
-    return response.data;
-  },
-
-  // Create category (admin only)
-  createCategory: async (categoryData) => {
-    const response = await api.post('/api/categories', categoryData);
-    return response.data;
-  },
-
-  // Update category (admin only)
-  updateCategory: async (id, categoryData) => {
-    const response = await api.put(`/api/categories/${id}`, categoryData);
-    return response.data;
-  },
-
-  // Delete category (admin only)
-  deleteCategory: async (id) => {
-    const response = await api.delete(`/api/categories/${id}`);
-    return response.data;
-  },
 };
 
 export default toolService;

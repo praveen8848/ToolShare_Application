@@ -46,7 +46,9 @@ const ToolCard = ({ tool, isOwnerView = false, onDelete }) => {
   };
 
   const locationString = [tool.city, tool.state].filter(Boolean).join(', ') || 'Location not specified';
-  const ratingDisplay = tool.ownerRating ? parseFloat(tool.ownerRating).toFixed(1) : null;
+  const ratingDisplay = tool.ownerRating && !isNaN(parseFloat(tool.ownerRating))
+    ? parseFloat(tool.ownerRating).toFixed(1)
+    : null;
 
   return (
     <div className="tool-card">

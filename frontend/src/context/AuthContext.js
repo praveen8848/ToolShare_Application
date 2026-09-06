@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../config/axiosConfig';
-import userService from '../services/userService'; // Add this import
+import authService from '../services/authService';
+import userService from '../services/userService';
+import { getCurrentUser, getToken, setUser as saveUser, setToken as saveToken, clearAuth } from '../utils/auth';
 
 const AuthContext = createContext();
 
@@ -15,12 +16,12 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(getToken());
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = getCurrentUser();
     if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+      setUser(storedUser);
     }
     setLoading(false);
   }, [token]);
@@ -28,17 +29,11 @@ export const AuthProvider = ({ children }) => {
   // Register new user
   const register = async (name, email, password) => {
     try {
-      const response = await api.post('/api/auth/register', {
-        name,
-        email,
-        password,
-      });
-      
-      console.log('Register response:', response.data);
-      return { success: true, data: response.data };
+      const data = await authService.register(name, email, password);
+      return { success: true, data };
     } catch (error) {
       console.error('Register error:', error.response?.data);
-      
+
       let errorMessage = 'Registration failed';
       if (error.response?.data) {
         if (typeof error.response.data === 'string') {
@@ -47,7 +42,7 @@ export const AuthProvider = ({ children }) => {
           errorMessage = error.response.data.message;
         }
       }
-      
+
       return {
         success: false,
         message: errorMessage,
@@ -58,40 +53,35 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (email, password) => {
     try {
-      const response = await api.post('/api/auth/login', {
-        email,
-        password,
-      });
-      
-      console.log('Login response:', response.data);
-      
-      if (!response.data) {
+      const data = await authService.login(email, password);
+
+      if (!data) {
         throw new Error('No data in response');
       }
-      
+
       let token, userData;
-      
-      if (response.data.token && response.data.user) {
-        token = response.data.token;
-        userData = response.data.user;
-      } else if (response.data.token && response.data.email) {
-        token = response.data.token;
+
+      if (data.token && data.user) {
+        token = data.token;
+        userData = data.user;
+      } else if (data.token && data.email) {
+        token = data.token;
         userData = {
-          id: response.data.id,
-          email: response.data.email,
-          name: response.data.name,
-          role: response.data.role
+          id: data.id,
+          email: data.email,
+          name: data.name,
+          role: data.role
         };
       } else {
         throw new Error('Invalid response format');
       }
-      
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      
+
+      saveToken(token);
+      saveUser(userData);
+
       setToken(token);
       setUser(userData);
-      
+
       return { success: true, user: userData };
     } catch (error) {
       console.error('Login error details:', {
@@ -99,7 +89,7 @@ export const AuthProvider = ({ children }) => {
         data: error.response?.data,
         message: error.message
       });
-      
+
       let errorMessage = 'Login failed';
       if (error.response?.data) {
         if (typeof error.response.data === 'string') {
@@ -110,7 +100,7 @@ export const AuthProvider = ({ children }) => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       return {
         success: false,
         message: errorMessage,
@@ -120,8 +110,7 @@ export const AuthProvider = ({ children }) => {
 
   // Logout user
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearAuth();
     setToken(null);
     setUser(null);
   };
@@ -129,15 +118,15 @@ export const AuthProvider = ({ children }) => {
   // Update user profile locally
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    saveUser(updatedUser);
   };
 
-  // NEW: Refresh user profile from backend
+  // Refresh user profile from backend
   const refreshUserProfile = async () => {
     try {
       const profile = await userService.getProfile();
       setUser(profile);
-      localStorage.setItem('user', JSON.stringify(profile));
+      saveUser(profile);
       return profile;
     } catch (error) {
       console.error('Failed to refresh profile:', error);

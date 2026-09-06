@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Badge, Button, Spinner, Alert, Tabs, Tab, Modal } from 'react-bootstrap';
-import { 
-  FaCalendarAlt, FaTools, FaUser, FaCheckCircle, FaTimesCircle, FaClock, 
+import { Container, Row, Col, Button, Spinner, Alert, Tabs, Tab, Modal } from 'react-bootstrap';
+import {
+  FaCalendarAlt, FaTools, FaUser, FaCheckCircle, FaTimesCircle, FaClock,
   FaTrash, FaMapMarkerAlt, FaPhone, FaInfoCircle, FaRupeeSign,
   FaArrowRight, FaSearch, FaBoxOpen
 } from 'react-icons/fa';
 import { useBookings } from '../hooks/useBookings';
-import { formatDate, formatDateTime } from '../utils/formatters';
+import { formatDate, formatDateTime } from '../utils/dateHelpers';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 

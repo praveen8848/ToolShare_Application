@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+import { useAuth } from '../context/AuthContext';
 
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
@@ -22,7 +23,7 @@ import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import OwnerProfile from '../pages/OwnerProfile'; 
 
 const AppRoutes = () => {
-  const isAuthenticated = !!localStorage.getItem("token"); // simple check
+  const { isAuthenticated } = useAuth();
 
   return (
     <Routes>

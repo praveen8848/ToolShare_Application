@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Spinner, Alert } from 'react-bootstrap';
-import { 
-  FaMapMarkerAlt, 
-  FaGlobe, 
-  FaTimesCircle, 
+import {
+  FaMapMarkerAlt,
+  FaGlobe,
+  FaTimesCircle,
   FaExclamationTriangle,
-  FaSearch,
-  FaFilter,
-  FaRupeeSign,
   FaStar,
   FaTools,
-  FaCompass
+  FaCompass,
+  FaFilter
 } from 'react-icons/fa';
 import { useTools } from '../hooks/useTools';
 import ToolGrid from '../components/tools/ToolGrid';
