@@ -9,7 +9,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", indexes = {
+        @Index(name = "idx_bookings_availability", columnList = "item_id, status, start_date, end_date"),
+        @Index(name = "idx_bookings_borrower", columnList = "borrower_id, status"),
+        @Index(name = "idx_bookings_item", columnList = "item_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,6 +22,9 @@ public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    private Long version;
 
     @Column(name = "item_id", nullable = false)
     private Long itemId;
@@ -34,9 +41,6 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status = BookingStatus.PENDING;
-
-  //  @Column(name = "qr_code", length = 500)
-   // private String qrCode;
 
     @Column(name = "total_amount", precision = 10, scale = 2)
     private BigDecimal totalAmount;
@@ -70,13 +74,12 @@ public class Booking {
         updatedAt = LocalDateTime.now();
     }
 
-
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
 
-    // NEW: Pickup details for this specific booking
+    // Pickup details for this specific booking
     @Column(name = "pickup_date_time")
     private LocalDateTime pickupDateTime;
 

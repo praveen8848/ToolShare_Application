@@ -13,12 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-
+/**
+ * Security configuration for the auth service.
+ * Configures JWT authentication, endpoint security, and password encoding.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -37,16 +36,20 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/check-email").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        // Internal endpoints - require special header (checked in controller)
                         .requestMatchers("/api/auth/internal/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 );
 

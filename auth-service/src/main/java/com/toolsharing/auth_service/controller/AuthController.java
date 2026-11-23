@@ -1,192 +1,93 @@
 package com.toolsharing.auth_service.controller;
-import com.toolsharing.auth_service.client.UserServiceClient;
+
 import com.toolsharing.auth_service.dto.*;
-import com.toolsharing.auth_service.entity.User;
-import com.toolsharing.auth_service.repository.UserRepository;
-import com.toolsharing.auth_service.security.JwtTokenProvider;
+import com.toolsharing.auth_service.service.AuthService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * REST controller for authentication endpoints.
+ * Handles user registration, login, token validation, and related operations.
+ */
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthService authService;
 
-    @Autowired
-    private UserRepository userRepository;
+    @Value("${internal.service.secret:toolshare-internal-secure-secret-key-2026}")
+    private String internalServiceSecret;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtTokenProvider tokenProvider;
-
-    @Autowired
-    private UserServiceClient userServiceClient;  // Add this
-
+    /**
+     * Register a new user.
+     * POST /api/auth/register
+     *
+     * @param registerRequest The registration request containing user details
+     * @return UserDto containing the registered user's information
+     */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-        logger.info("Registering user with email: {}", registerRequest.getEmail());
-
-        // Check if email already exists
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Email is already taken!");
-            return ResponseEntity.badRequest().body(error);
-        }
-
-        // Create new user
-        User user = new User();
-        user.setName(registerRequest.getName());
-        user.setEmail(registerRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        user.setRole("USER");
-
-        User savedUser = userRepository.save(user);
-
-        // 🔥 NEW: Sync with User Service
         try {
-            UserSyncDto syncDto = UserSyncDto.builder()
-                    .id(savedUser.getId())
-                    .email(savedUser.getEmail())
-                    .name(savedUser.getName())
-                    .role(savedUser.getRole())
-                    .isActive(savedUser.getIsActive())
-                    .build();
-
-            userServiceClient.syncUser(syncDto);
-            logger.info("User synced with User Service: {}", savedUser.getEmail());
+            UserDto userDto = authService.register(registerRequest);
+            return ResponseEntity.ok(userDto);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         } catch (Exception e) {
-            // Log error but don't fail registration
-            logger.error("Failed to sync user with User Service: {}", e.getMessage());
+            logger.error("Registration failed for email: {}", registerRequest.getEmail(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Registration failed. Please try again.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-
-        // Convert to DTO
-        UserDto userDto = UserDto.builder()
-                .id(savedUser.getId())
-                .name(savedUser.getName())
-                .email(savedUser.getEmail())
-                .role(savedUser.getRole())
-                .isActive(savedUser.getIsActive())
-                .createdAt(savedUser.getCreatedAt())
-                .build();
-
-        logger.info("User registered successfully with id: {}", savedUser.getId());
-        return ResponseEntity.ok(userDto);
     }
 
     /**
-     * Register a new user
-     * POST /api/auth/register
-     */
-//    @PostMapping("/register")
-//    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-//        logger.info("Registering user with email: {}", registerRequest.getEmail());
-//
-//        // Check if email already exists
-//        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-//            Map<String, String> error = new HashMap<>();
-//            error.put("message", "Email is already taken!");
-//            return ResponseEntity.badRequest().body(error);
-//        }
-//
-//        // Create new user
-//        User user = new User();
-//        user.setName(registerRequest.getName());
-//        user.setEmail(registerRequest.getEmail());
-//        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-//        user.setRole("USER");
-//
-//        User savedUser = userRepository.save(user);
-//
-//        // Convert to DTO
-//        UserDto userDto = UserDto.builder()
-//                .id(savedUser.getId())
-//                .name(savedUser.getName())
-//                .email(savedUser.getEmail())
-//                .role(savedUser.getRole())
-//                .isActive(savedUser.getIsActive())
-//                .createdAt(savedUser.getCreatedAt())
-//                .build();
-//
-//        logger.info("User registered successfully with id: {}", savedUser.getId());
-//        return ResponseEntity.ok(userDto);
-//    }
-
-    /**
-     * Authenticate user and return JWT token
+     * Authenticate user and return JWT token.
      * POST /api/auth/login
+     *
+     * @param loginRequest The login request containing email and password
+     * @return LoginResponse containing JWT token and user details
      */
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        logger.info("Login attempt for email: {}", loginRequest.getEmail());
-
         try {
-            // Authenticate user
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Generate JWT token
-            String jwt = tokenProvider.generateToken(authentication);
-
-            // Get user details
-            User user = userRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Create response DTO
-            UserDto userDto = UserDto.builder()
-                    .id(user.getId())
-                    .name(user.getName())
-                    .email(user.getEmail())
-                    .role(user.getRole())
-                    .isActive(user.getIsActive())
-                    .createdAt(user.getCreatedAt())
-                    .build();
-
-            LoginResponse response = LoginResponse.builder()
-                    .token(jwt)
-                    .tokenType("Bearer")
-                    .user(userDto)
-                    .build();
-
-            logger.info("User logged in successfully: {}", user.getEmail());
+            LoginResponse response = authService.login(loginRequest);
             return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            logger.error("Login failed for email: {}", loginRequest.getEmail(), e);
+        } catch (AuthenticationException e) {
+            logger.warn("Login failed for email: {}", loginRequest.getEmail());
             Map<String, String> error = new HashMap<>();
             error.put("message", "Invalid email or password");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        } catch (Exception e) {
+            logger.error("Login failed for email: {}", loginRequest.getEmail(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Login failed. Please try again.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
     /**
-     * Validate JWT token
+     * Validate JWT token.
      * POST /api/auth/validate
+     *
+     * @param authHeader The Authorization header containing the Bearer token
+     * @return Validation result with user information
      */
     @PostMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
@@ -198,13 +99,13 @@ public class AuthController {
         }
 
         String token = authHeader.substring(7);
-        boolean isValid = tokenProvider.validateToken(token);
+        boolean isValid = authService.validateToken(token);
 
         if (isValid) {
             Map<String, Object> response = new HashMap<>();
             response.put("valid", true);
-            response.put("userId", tokenProvider.getUserIdFromToken(token));
-            response.put("email", tokenProvider.getEmailFromToken(token));
+            response.put("userId", authService.getUserIdFromToken(token));
+            response.put("email", authService.getEmailFromToken(token));
             return ResponseEntity.ok(response);
         } else {
             Map<String, String> error = new HashMap<>();
@@ -214,8 +115,11 @@ public class AuthController {
     }
 
     /**
-     * Get current user details from token
+     * Get current user details from token.
      * GET /api/auth/me
+     *
+     * @param authHeader The Authorization header containing the Bearer token
+     * @return UserDto containing current user's information
      */
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
@@ -229,33 +133,30 @@ public class AuthController {
         String token = authHeader.substring(7);
 
         // Validate token
-        if (!tokenProvider.validateToken(token)) {
+        if (!authService.validateToken(token)) {
             Map<String, String> error = new HashMap<>();
             error.put("message", "Invalid token");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
-        // Get user from token
-        Long userId = tokenProvider.getUserIdFromToken(token);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Convert to DTO
-        UserDto userDto = UserDto.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .isActive(user.getIsActive())
-                .createdAt(user.getCreatedAt())
-                .build();
-
-        return ResponseEntity.ok(userDto);
+        try {
+            Long userId = authService.getUserIdFromToken(token);
+            UserDto userDto = authService.getCurrentUser(userId);
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            logger.error("Failed to get current user", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
     }
 
     /**
-     * Refresh JWT token
+     * Refresh JWT token.
      * POST /api/auth/refresh
+     *
+     * @param authHeader The Authorization header containing the Bearer token
+     * @return New JWT token
      */
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authHeader) {
@@ -268,36 +169,32 @@ public class AuthController {
 
         String oldToken = authHeader.substring(7);
 
-        // Validate old token
-        if (!tokenProvider.validateToken(oldToken)) {
+        try {
+            String newToken = authService.refreshToken(oldToken);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("token", newToken);
+            response.put("tokenType", "Bearer");
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", "Invalid token");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        } catch (Exception e) {
+            logger.error("Token refresh failed", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Token refresh failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
-
-        // Generate new token with same user details
-        Long userId = tokenProvider.getUserIdFromToken(oldToken);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Create authentication object
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(user.getEmail(), null);
-
-        // Generate new token
-        String newToken = tokenProvider.generateToken(authentication);
-
-        Map<String, String> response = new HashMap<>();
-        response.put("token", newToken);
-        response.put("tokenType", "Bearer");
-
-        logger.info("Token refreshed for user: {}", user.getEmail());
-        return ResponseEntity.ok(response);
     }
 
     /**
-     * Logout user (invalidate token on client side)
+     * Logout user (invalidate token on client side).
      * POST /api/auth/logout
+     *
+     * @param authHeader The Authorization header containing the Bearer token
+     * @return Success message
      */
     @PostMapping("/logout")
     public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
@@ -311,33 +208,49 @@ public class AuthController {
     }
 
     /**
-     * Check if email is available
+     * Check if email is available.
      * GET /api/auth/check-email?email=user@example.com
+     *
+     * @param email The email to check
+     * @return Availability status
      */
     @GetMapping("/check-email")
     public ResponseEntity<?> checkEmailAvailability(@RequestParam String email) {
-        boolean exists = userRepository.existsByEmail(email);
+        boolean available = authService.isEmailAvailable(email);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("available", !exists);
+        response.put("available", available);
         response.put("email", email);
 
         return ResponseEntity.ok(response);
     }
-    // NEW: Internal endpoint for updating password
-    @PutMapping("/internal/update-password")
-    public ResponseEntity<Void> updatePassword(@RequestParam String email, @RequestParam String password) {
-        logger.info("Received internal request to update password for email: {}", email);
 
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            user.setPassword(passwordEncoder.encode(password));
-            userRepository.save(user);
-            logger.info("Password successfully updated for user: {}", email);
+    /**
+     * Internal endpoint for updating password.
+     * This endpoint is restricted to service-to-service communication only.
+     * PUT /api/auth/internal/update-password
+     *
+     * @param email The user's email
+     * @param password The new password
+     * @return Success or not found response
+     */
+    @PutMapping("/internal/update-password")
+    public ResponseEntity<Void> updatePassword(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String internalSecret,
+            @RequestParam String email,
+            @RequestParam String password) {
+
+        // SECURITY FIX: Verify internal secret for service-to-service authentication
+        if (internalServiceSecret == null || !internalServiceSecret.equals(internalSecret)) {
+            logger.warn("Unauthorized internal API call attempt for password update");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        boolean updated = authService.updatePassword(email, password);
+
+        if (updated) {
             return ResponseEntity.ok().build();
         } else {
-            logger.warn("Attempted to update password for non-existent user: {}", email);
             return ResponseEntity.notFound().build();
         }
     }

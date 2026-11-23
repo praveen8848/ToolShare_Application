@@ -1,6 +1,5 @@
 package com.toolsharing.tool_service.service;
 
-import com.toolsharing.tool_service.client.UserServiceClient;
 import com.toolsharing.tool_service.dto.request.CreateToolRequest;
 import com.toolsharing.tool_service.dto.request.UpdateToolRequest;
 import com.toolsharing.tool_service.dto.response.ToolResponse;
@@ -34,7 +33,7 @@ public class ToolService {
 
     private final ToolRepository toolRepository;
     private final CategoryRepository categoryRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserLookupService userLookupService;
     private final GeocodingService geocodingService;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
@@ -107,7 +106,12 @@ public class ToolService {
         logger.info("Creating tool for user {}, clearing related caches", ownerId);
 
         try {
-            userServiceClient.getUserById(ownerId);
+            var user = userLookupService.getUser(ownerId);
+            if (user == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid owner ID: " + ownerId);
+            }
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid owner ID: " + ownerId);
         }
@@ -323,14 +327,13 @@ public class ToolService {
     }
 
     private String getOwnerName(Long ownerId) {
-        try {
-            var user = userServiceClient.getUserById(ownerId);
-            return user.getName();
-        } catch (Exception e) {
-            logger.warn("Could not fetch owner name for user: {}", ownerId);
+        if (ownerId == null) {
             return null;
         }
+        return userLookupService.getOwnerName(ownerId);
     }
+
+    @CacheEvict(value = "tools", key = "#id.toString()")
     @Transactional
     public void incrementViews(Long id) {
         toolRepository.incrementViewsCount(id);

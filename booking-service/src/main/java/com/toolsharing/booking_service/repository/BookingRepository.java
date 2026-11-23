@@ -2,13 +2,21 @@ package com.toolsharing.booking_service.repository;
 
 import com.toolsharing.booking_service.entity.Booking;
 import com.toolsharing.booking_service.entity.BookingStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
+/**
+ * Repository for Booking entity operations.
+ * Handles database queries for booking management.
+ */
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -21,7 +29,34 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find bookings by item and status
     List<Booking> findByItemIdAndStatus(Long itemId, BookingStatus status);
 
-    // Find confirmed bookings that overlap with given dates
+    /**
+     * Find confirmed bookings that overlap with given dates.
+     * Uses pessimistic locking to prevent race conditions during booking creation.
+     *
+     * @param itemId The tool/item ID
+     * @param startDate The start date to check
+     * @param endDate The end date to check
+     * @return List of overlapping confirmed bookings
+     */
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("SELECT b FROM Booking b WHERE " +
+            "b.itemId = :itemId AND " +
+            "b.status = 'CONFIRMED' AND " +
+            "((b.startDate <= :endDate AND b.endDate >= :startDate))")
+    List<Booking> findConfirmedOverlappingBookingsWithLock(
+            @Param("itemId") Long itemId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * Find confirmed bookings that overlap with given dates (without lock).
+     * Use for read-only operations.
+     *
+     * @param itemId The tool/item ID
+     * @param startDate The start date to check
+     * @param endDate The end date to check
+     * @return List of overlapping confirmed bookings
+     */
     @Query("SELECT b FROM Booking b WHERE " +
             "b.itemId = :itemId AND " +
             "b.status = 'CONFIRMED' AND " +
@@ -38,7 +73,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find bookings by status
     List<Booking> findByStatus(BookingStatus status);
 
-    // FIXED: Use the status parameter, not hardcoded 'PENDING'
+    /**
+     * Find bookings by item IDs and status.
+     *
+     * @param itemIds List of item IDs
+     * @param status The booking status
+     * @return List of bookings matching criteria
+     */
     @Query("SELECT b FROM Booking b WHERE b.itemId IN :itemIds AND b.status = :status ORDER BY b.createdAt DESC")
     List<Booking> findByItemIdInAndStatus(@Param("itemIds") List<Long> itemIds, @Param("status") BookingStatus status);
 
@@ -50,4 +91,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             Long itemId, BookingStatus status, LocalDate endDate, LocalDate startDate);
 
     List<Booking> findByItemIdIn(List<Long> itemIds);
+
+    /**
+     * Find booking by ID with pessimistic write lock.
+     * Use when updating booking to prevent concurrent modifications.
+     *
+     * @param id The booking ID
+     * @return Optional containing the booking if found
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Booking b WHERE b.id = :id")
+    Optional<Booking> findByIdWithLock(@Param("id") Long id);
 }

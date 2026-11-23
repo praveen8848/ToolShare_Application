@@ -16,7 +16,10 @@ public interface AuthServiceClient {
     @PostMapping("/api/auth/validate")
     TokenValidationResponse validateToken(@RequestHeader("Authorization") String token);
     @PutMapping("/api/auth/internal/update-password")
-    void updatePassword(@RequestParam("email") String email, @RequestParam("password") String newPassword);
+    void updatePassword(
+            @RequestHeader("X-Internal-Secret") String internalSecret,
+            @RequestParam("email") String email,
+            @RequestParam("password") String newPassword);
 }
 
 record TokenValidationResponse(boolean valid, Long userId, String email, String name, String role) {}

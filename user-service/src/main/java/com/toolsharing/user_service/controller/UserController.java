@@ -16,6 +16,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * REST controller for user profile management.
+ * Handles profile operations, picture uploads, and user verification.
+ */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -26,45 +30,112 @@ public class UserController {
     private UserService userService;
 
     /**
-     * Get current user profile
+     * Get current user profile.
+     * GET /api/users/profile
+     *
+     * @param userId The authenticated user's ID from X-User-Id header
+     * @return UserProfileDto containing the user's profile information
      */
     @GetMapping("/profile")
-    public ResponseEntity<UserProfileDto> getProfile(
-            @RequestHeader("X-User-Id") Long userId) {
-
+    public ResponseEntity<UserProfileDto> getProfile(@RequestHeader("X-User-Id") Long userId) {
         logger.info("Fetching profile for user: {}", userId);
         UserProfileDto profile = userService.getProfileByUserId(userId);
         return ResponseEntity.ok(profile);
     }
 
     /**
-     * Get user by ID (for other services)
+     * Get user by ID.
+     * GET /api/users/{userId}
+     *
+     * SECURITY FIX: Added authorization check to prevent unauthorized access to user profiles.
+     * Only the user themselves or admins can access full profile details.
+     *
+     * @param userId The ID of the user to retrieve
+     * @param requestingUserId The ID of the user making the request
+     * @return UserProfileDto containing the user's profile information
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<UserProfileDto> getUserById(
+    public ResponseEntity<?> getUserById(
             @PathVariable Long userId,
             @RequestHeader(value = "X-User-Id", required = false) Long requestingUserId) {
 
-        logger.info("Fetching profile for user: {}", userId);
+        logger.info("Fetching profile for user: {} requested by: {}", userId, requestingUserId);
+
+        // SECURITY FIX: Authorization check
+        if (requestingUserId == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
+        // Allow users to access their own profile
+        if (!userId.equals(requestingUserId)) {
+            // For other users, check if requester is admin
+            UserProfileDto requesterProfile = userService.getProfileByUserId(requestingUserId);
+            if (requesterProfile == null || !"ADMIN".equals(requesterProfile.getRole())) {
+                logger.warn("User {} attempted to access user {} profile without authorization",
+                    requestingUserId, userId);
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "Access denied. You can only access your own profile.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+        }
+
         UserProfileDto profile = userService.getProfileByUserId(userId);
         return ResponseEntity.ok(profile);
     }
 
     /**
-     * Get user by email
+     * Get user by email.
+     * GET /api/users/email/{email}
+     *
+     * SECURITY FIX: Added authorization check to prevent unauthorized access.
+     *
+     * @param email The email of the user to retrieve
+     * @param requestingUserId The ID of the user making the request
+     * @return UserProfileDto containing the user's profile information
      */
     @GetMapping("/email/{email}")
-    public ResponseEntity<UserProfileDto> getUserByEmail(
+    public ResponseEntity<?> getUserByEmail(
             @PathVariable String email,
             @RequestHeader(value = "X-User-Id", required = false) Long requestingUserId) {
 
-        logger.info("Fetching profile for email: {}", email);
+        logger.info("Fetching profile for email: {} requested by: {}", email, requestingUserId);
+
+        // SECURITY FIX: Authorization check
+        if (requestingUserId == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
         UserProfileDto profile = userService.getProfileByEmail(email);
+
+        if (profile != null) {
+            // Allow users to access their own profile
+            if (!profile.getUserId().equals(requestingUserId)) {
+                // For other users, check if requester is admin
+                UserProfileDto requesterProfile = userService.getProfileByUserId(requestingUserId);
+                if (requesterProfile == null || !"ADMIN".equals(requesterProfile.getRole())) {
+                    logger.warn("User {} attempted to access user {} profile by email without authorization",
+                        requestingUserId, profile.getUserId());
+                    Map<String, String> error = new HashMap<>();
+                    error.put("message", "Access denied. You can only access your own profile.");
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+                }
+            }
+        }
+
         return ResponseEntity.ok(profile);
     }
 
     /**
-     * Update user profile
+     * Update user profile.
+     * PUT /api/users/profile
+     *
+     * @param userId The authenticated user's ID from X-User-Id header
+     * @param request The update request containing new profile data
+     * @return Updated UserProfileDto
      */
     @PutMapping("/profile")
     public ResponseEntity<UserProfileDto> updateProfile(
@@ -77,7 +148,12 @@ public class UserController {
     }
 
     /**
-     * Upload profile picture
+     * Upload profile picture.
+     * POST /api/users/profile/picture
+     *
+     * @param userId The authenticated user's ID from X-User-Id header
+     * @param file The image file to upload
+     * @return Response with the uploaded image URL
      */
     @PostMapping(value = "/profile/picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadProfilePicture(
@@ -130,7 +206,11 @@ public class UserController {
     }
 
     /**
-     * Sync user from auth service
+     * Sync user from auth service (internal use).
+     * POST /api/users/sync
+     *
+     * @param authUser The user data from auth service
+     * @return Success response
      */
     @PostMapping("/sync")
     public ResponseEntity<Void> syncUser(@RequestBody UserAuthDto authUser) {
@@ -140,7 +220,11 @@ public class UserController {
     }
 
     /**
-     * Check if user exists (public endpoint)
+     * Check if user exists (public endpoint for inter-service communication).
+     * GET /api/users/exists/{userId}
+     *
+     * @param userId The user ID to check
+     * @return Map with exists boolean
      */
     @GetMapping("/exists/{userId}")
     public ResponseEntity<Map<String, Boolean>> checkUserExists(@PathVariable Long userId) {
@@ -151,7 +235,11 @@ public class UserController {
     }
 
     /**
-     * Check if user exists by email
+     * Check if user exists by email.
+     * GET /api/users/exists/email/{email}
+     *
+     * @param email The email to check
+     * @return Map with exists boolean
      */
     @GetMapping("/exists/email/{email}")
     public ResponseEntity<Map<String, Boolean>> checkUserExistsByEmail(@PathVariable String email) {
@@ -162,11 +250,15 @@ public class UserController {
     }
 
     // =========================================================================
-    // NEW OTP & PASSWORD RESET ENDPOINTS
+    // OTP & PASSWORD RESET ENDPOINTS
     // =========================================================================
 
     /**
-     * Verify Registration OTP
+     * Verify Registration OTP.
+     * POST /api/users/verify-email
+     *
+     * @param request Map containing email and otp
+     * @return Success or error response
      */
     @PostMapping("/verify-email")
     public ResponseEntity<?> verifyEmailOtp(@RequestBody Map<String, String> request) {
@@ -187,7 +279,11 @@ public class UserController {
     }
 
     /**
-     * Request Password Reset OTP
+     * Request Password Reset OTP.
+     * POST /api/users/forgot-password
+     *
+     * @param request Map containing email
+     * @return Success response (always returns success for security)
      */
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
@@ -203,7 +299,11 @@ public class UserController {
     }
 
     /**
-     * Verify OTP and Set New Password
+     * Verify OTP and Set New Password.
+     * POST /api/users/reset-password
+     *
+     * @param request Map containing email, otp, and newPassword
+     * @return Success or error response
      */
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {

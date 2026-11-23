@@ -4,6 +4,7 @@ import com.toolsharing.booking_service.client.ToolDto;
 import com.toolsharing.booking_service.client.ToolServiceClient;
 import com.toolsharing.booking_service.client.UserDto;
 import com.toolsharing.booking_service.client.UserServiceClient;
+import com.toolsharing.booking_service.constant.NotificationEventType;
 import com.toolsharing.booking_service.dto.NotificationEvent;
 import com.toolsharing.booking_service.dto.request.ApproveBookingRequest;
 import com.toolsharing.booking_service.dto.request.CreateBookingRequest;
@@ -117,15 +118,20 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot book your own tool");
         }
 
-        List<Booking> confirmedOverlaps = bookingRepository.findConfirmedOverlappingBookings(
+        // FIX: Use pessimistic locking to prevent race condition
+        // The lock is held within the transaction, preventing concurrent bookings
+        List<Booking> confirmedOverlaps = bookingRepository.findConfirmedOverlappingBookingsWithLock(
                 request.getItemId(), request.getStartDate(), request.getEndDate());
 
         if (!confirmedOverlaps.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Tool is already booked for these dates");
         }
 
-        long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate());
-        BigDecimal totalAmount = tool.getDailyRate().multiply(BigDecimal.valueOf(days));
+        long days = Math.max(1, ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()));
+        // FIX: Add proper scale and rounding mode to BigDecimal calculation
+        BigDecimal totalAmount = tool.getDailyRate()
+                .multiply(BigDecimal.valueOf(days))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
 
         Booking booking = new Booking();
         booking.setItemId(request.getItemId());
@@ -157,7 +163,7 @@ public class BookingService {
             );
 
             NotificationEvent event = NotificationEvent.builder()
-                    .eventType("BOOKING_REQUESTED")
+                    .eventType(NotificationEventType.BOOKING_REQUESTED.getValue())
                     .recipientEmail(owner.getEmail())
                     .subject("New Booking Request: " + tool.getName())
                     .messageBody(emailBody)
@@ -198,9 +204,12 @@ public class BookingService {
         }
 
         LocalDateTime minPickupDateTime = booking.getStartDate().atStartOfDay().minusDays(1);
-        if (request.getPickupDateTime().isAfter(minPickupDateTime)) {
+        if (request.getPickupDateTime().isBefore(minPickupDateTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Pickup must be scheduled at least 1 day before the booking start date: " + booking.getStartDate());
+        }
+        if (request.getPickupDateTime().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pickup date cannot be in the past");
         }
 
         List<Booking> confirmedOverlaps = bookingRepository.findConfirmedOverlappingBookings(
@@ -241,7 +250,7 @@ public class BookingService {
             );
 
             NotificationEvent event = NotificationEvent.builder()
-                    .eventType("BOOKING_APPROVED")
+                    .eventType(NotificationEventType.BOOKING_APPROVED.getValue())
                     .recipientEmail(borrower.getEmail())
                     .subject("Booking Approved: " + tool.getName())
                     .messageBody(emailBody)
@@ -290,7 +299,7 @@ public class BookingService {
             UserDto borrower = userServiceClient.getUserById(booking.getBorrowerId());
 
             NotificationEvent event = NotificationEvent.builder()
-                    .eventType("BOOKING_REJECTED")
+                    .eventType(NotificationEventType.BOOKING_REJECTED.getValue())
                     .recipientEmail(borrower.getEmail())
                     .subject("Update on your booking: " + tool.getName())
                     .messageBody(String.format(

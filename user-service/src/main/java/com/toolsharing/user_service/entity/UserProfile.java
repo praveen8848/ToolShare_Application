@@ -7,7 +7,10 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_profiles")
+@Table(name = "user_profiles", indexes = {
+        @Index(name = "idx_user_profiles_email", columnList = "email", unique = true),
+        @Index(name = "idx_user_profiles_status", columnList = "account_status")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,11 +19,17 @@ public class UserProfile {
     @Id
     private Long userId;  // Same ID as auth service user
 
+    @Version
+    private Long version;
+
     @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
+    private String role = "USER";
 
     @Column(length = 20)
     private String phoneNumber;
@@ -54,36 +63,13 @@ public class UserProfile {
 
     @Column(name = "total_bookings")
     private Integer totalBookings = 0;
+
     @Column(name = "current_otp")
     private String currentOtp;
 
     @Column(name = "otp_expiry")
     private LocalDateTime otpExpiry;
 
-    public String getCurrentOtp() {
-        return currentOtp;
-    }
-
-    public void setCurrentOtp(String currentOtp) {
-        this.currentOtp = currentOtp;
-    }
-
-    public LocalDateTime getOtpExpiry() {
-        return otpExpiry;
-    }
-
-    public void setOtpExpiry(LocalDateTime otpExpiry) {
-        this.otpExpiry = otpExpiry;
-    }
-
-    //    @Column(name = "successful_transactions")
-//    private Integer successfulTransactions = 0;
-//
-//    @Column(name = "cancelled_transactions")
-//    private Integer cancelledTransactions = 0;
-//    @Column(name = "preferences")
-//    private String preferences;
-//
     @Column(name = "last_active")
     private LocalDateTime lastActive;
 
@@ -98,6 +84,14 @@ public class UserProfile {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         lastActive = LocalDateTime.now();
+        if (role == null) role = "USER";
+        if (accountStatus == null) accountStatus = AccountStatus.ACTIVE;
+        if (verificationStatus == null) verificationStatus = VerificationStatus.UNVERIFIED;
+        if (emailVerified == null) emailVerified = false;
+        if (phoneVerified == null) phoneVerified = false;
+        if (trustScore == null) trustScore = 0.0;
+        if (totalListings == null) totalListings = 0;
+        if (totalBookings == null) totalBookings = 0;
     }
 
     @PreUpdate

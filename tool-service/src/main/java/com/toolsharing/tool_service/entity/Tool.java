@@ -13,7 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tools")
+@Table(name = "tools", indexes = {
+        @Index(name = "idx_tools_owner_id", columnList = "owner_id"),
+        @Index(name = "idx_tools_category_id", columnList = "category_id"),
+        @Index(name = "idx_tools_status", columnList = "status"),
+        @Index(name = "idx_tools_city", columnList = "city"),
+        @Index(name = "idx_tools_pincode", columnList = "pincode")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +28,9 @@ public class Tool {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    private Long version;
 
     @Column(nullable = false, length = 255)
     private String name;

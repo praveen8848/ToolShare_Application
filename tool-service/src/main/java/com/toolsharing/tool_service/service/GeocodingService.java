@@ -1,5 +1,8 @@
 package com.toolsharing.tool_service.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -10,43 +13,69 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service for geocoding addresses into latitude and longitude coordinates
+ * using the OpenStreetMap Nominatim API.
+ */
 @Service
 public class GeocodingService {
 
+    private static final Logger logger = LoggerFactory.getLogger(GeocodingService.class);
+
     private final RestTemplate restTemplate;
+
+    @Value("${geocoding.email:support@toolsharing.com}")
+    private String geocodingEmail;
 
     public GeocodingService() {
         this.restTemplate = new RestTemplate();
     }
 
+    public GeocodingService(RestTemplate restTemplate, String geocodingEmail) {
+        this.restTemplate = restTemplate;
+        this.geocodingEmail = geocodingEmail;
+    }
+
+    /**
+     * Resolves geographical coordinates for a given address.
+     *
+     * @param address The human-readable address query
+     * @return double array containing [latitude, longitude], or null if geocoding fails
+     */
+    @SuppressWarnings("rawtypes")
     public double[] getCoordinatesForAddress(String address) {
-        // THE FIX: Use a URI template variable {address} so RestTemplate securely URL-encodes the spaces/commas itself.
+        if (address == null || address.trim().isEmpty()) {
+            logger.warn("Geocoding requested with empty address");
+            return null;
+        }
+
         String url = "https://nominatim.openstreetmap.org/search?q={address}&format=json&limit=1";
 
         HttpHeaders headers = new HttpHeaders();
-        // IMPORTANT: Keep your real email in this string, or the 403 Forbidden error will return!
-        headers.set("User-Agent", "ToolSharingPlatform_BTechProject/1.0 (put_your_real_email_here@gmail.com)");
+        headers.set("User-Agent", "ToolSharingPlatform/1.0 (" + geocodingEmail + ")");
         headers.set("Accept-Language", "en-US,en;q=0.9");
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            // We pass 'address' as the final argument. Spring safely injects it into the {address} block.
             ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, entity, List.class, address);
-            List<Map<String, Object>> responseBody = response.getBody();
 
-            if (responseBody != null && !responseBody.isEmpty()) {
-                Map<String, Object> location = responseBody.get(0);
-
-                double lat = Double.parseDouble(location.get("lat").toString());
-                double lon = Double.parseDouble(location.get("lon").toString());
-
-                return new double[]{lat, lon};
+            if (response != null && response.getBody() != null && !response.getBody().isEmpty()) {
+                Object firstItem = response.getBody().get(0);
+                if (firstItem instanceof Map mapLocation) {
+                    Object latObj = mapLocation.get("lat");
+                    Object lonObj = mapLocation.get("lon");
+                    if (latObj != null && lonObj != null) {
+                        double lat = Double.parseDouble(latObj.toString());
+                        double lon = Double.parseDouble(lonObj.toString());
+                        return new double[]{lat, lon};
+                    }
+                }
             } else {
-                System.out.println("Geocoding Warning: OpenStreetMap returned 0 results for address: '" + address + "'");
+                logger.info("OpenStreetMap returned 0 results for address: '{}'", address);
             }
         } catch (Exception e) {
-            System.err.println("Geocoding API Error for address: " + address + " | Error: " + e.getMessage());
+            logger.error("Geocoding API error for address '{}': {}", address, e.getMessage());
         }
 
         return null;

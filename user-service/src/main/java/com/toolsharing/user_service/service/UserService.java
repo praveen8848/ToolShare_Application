@@ -5,12 +5,14 @@ import com.toolsharing.user_service.dto.*;
 import com.toolsharing.user_service.entity.UserProfile;
 import com.toolsharing.user_service.repository.UserProfileRepository;
 import com.toolsharing.user_service.util.OtpGenerator;
+import com.toolsharing.user_service.util.UserConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +39,12 @@ public class UserService {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Value("${internal.service.secret:toolshare-internal-secure-secret-key-2026}")
+    private String internalServiceSecret;
 
     @Value("${file.upload.dir:./uploads/profiles}")
     private String uploadDir;
@@ -124,30 +132,26 @@ public class UserService {
             profile.setUserId(authUser.getId());
             profile.setEmail(authUser.getEmail());
             profile.setName(authUser.getName());
+            profile.setRole(authUser.getRole() != null ? authUser.getRole() : "USER");
             profile.setAccountStatus(UserProfile.AccountStatus.ACTIVE);
 
-            // Set to UNVERIFIED for OTP flow
-            profile.setEmailVerified(false);
-            profile.setVerificationStatus(UserProfile.VerificationStatus.UNVERIFIED);
+            // Mark user profile as active and verified upon registration
+            profile.setEmailVerified(true);
+            profile.setVerificationStatus(UserProfile.VerificationStatus.VERIFIED);
 
             profile.setTrustScore(0.0);
             profile.setTotalListings(0);
             profile.setTotalBookings(0);
 
-            // Generate Registration OTP
-            String otp = OtpGenerator.generateSixDigitOtp();
-            profile.setCurrentOtp(otp);
-            profile.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
-
             userProfileRepository.save(profile);
-            logger.info("User synced and pending verification: {}", authUser.getEmail());
+            logger.info("User synced and profile created: {}", authUser.getEmail());
 
-            // 🛠️ FIX: Custom body for Registration
+            // Send Welcome Email
             String emailBody = String.format(
-                    "Hi %s,\n\nYour account verification code is: %s\n\nThis code will expire in 10 minutes.",
-                    authUser.getName(), otp
+                    "Hi %s,\n\nWelcome to ToolShare! Your account has been created successfully. You are now ready to start exploring and sharing tools!\n\nHappy building!",
+                    authUser.getName()
             );
-            sendNotification(authUser.getEmail(), "Verify your ToolShare Account", emailBody, "VERIFICATION_EMAIL");
+            sendNotification(authUser.getEmail(), "Welcome to ToolShare!", emailBody, "WELCOME_EMAIL");
 
         } else {
             Optional<UserProfile> optionalProfile = userProfileRepository.findById(authUser.getId());
@@ -155,6 +159,9 @@ public class UserService {
                 UserProfile existingProfile = optionalProfile.get();
                 existingProfile.setEmail(authUser.getEmail());
                 existingProfile.setName(authUser.getName());
+                if (authUser.getRole() != null) {
+                    existingProfile.setRole(authUser.getRole());
+                }
                 userProfileRepository.save(existingProfile);
                 logger.info("User profile updated: {}", authUser.getEmail());
             }
@@ -165,13 +172,12 @@ public class UserService {
     // OTP & NOTIFICATION LOGIC
     // =========================================================================
 
-    // 🛠️ FIX: Made this generic so it accepts ANY email body
     private void sendNotification(String email, String subject, String messageBody, String eventType) {
         NotificationEvent event = NotificationEvent.builder()
                 .eventType(eventType)
                 .recipientEmail(email)
                 .subject(subject)
-                .messageBody(messageBody) // Pass the custom body here!
+                .messageBody(messageBody)
                 .build();
 
         try {
@@ -191,7 +197,7 @@ public class UserService {
 
         UserProfile profile = optionalProfile.get();
 
-        if (profile.getCurrentOtp() == null || !profile.getCurrentOtp().equals(otp)) {
+        if (profile.getCurrentOtp() == null || !passwordEncoder.matches(otp, profile.getCurrentOtp())) {
             return false;
         }
 
@@ -208,7 +214,6 @@ public class UserService {
 
         logger.info("User email verified successfully: {}", email);
 
-        // 🛠️ FIX: Beautiful, custom welcome email body
         String welcomeBody = String.format(
                 "Hi %s,\n\nWelcome to ToolShare! Your account has been successfully verified. You are now ready to start exploring and sharing tools!\n\nHappy building!",
                 profile.getName()
@@ -224,14 +229,13 @@ public class UserService {
         if (optionalProfile.isPresent()) {
             UserProfile profile = optionalProfile.get();
             String otp = OtpGenerator.generateSixDigitOtp();
-            profile.setCurrentOtp(otp);
-            profile.setOtpExpiry(LocalDateTime.now().plusMinutes(15));
+            profile.setCurrentOtp(passwordEncoder.encode(otp));
+            profile.setOtpExpiry(LocalDateTime.now().plusMinutes(UserConstants.PASSWORD_RESET_OTP_EXPIRY_MINUTES));
             userProfileRepository.save(profile);
 
-            // 🛠️ FIX: Custom body for Password Reset
             String emailBody = String.format(
-                    "Hi %s,\n\nYour password reset code is: %s\n\nThis code will expire in 15 minutes. If you did not request this, please ignore this email.",
-                    profile.getName(), otp
+                    "Hi %s,\n\nYour password reset code is: %s\n\nThis code will expire in %d minutes. If you did not request this, please ignore this email.",
+                    profile.getName(), otp, UserConstants.PASSWORD_RESET_OTP_EXPIRY_MINUTES
             );
             sendNotification(email, "ToolShare Password Reset Code", emailBody, "PASSWORD_RESET_EMAIL");
         }
@@ -247,9 +251,8 @@ public class UserService {
 
         UserProfile profile = optionalProfile.get();
 
-        if (profile.getCurrentOtp() == null || !profile.getCurrentOtp().trim().equals(otp.trim())) {
-            logger.warn("Password reset failed: OTP mismatch for {}. DB: '{}', Input: '{}'",
-                    email, profile.getCurrentOtp(), otp);
+        if (profile.getCurrentOtp() == null || !passwordEncoder.matches(otp, profile.getCurrentOtp())) {
+            logger.warn("Password reset failed: OTP mismatch for {}", email);
             return false;
         }
 
@@ -259,9 +262,9 @@ public class UserService {
         }
 
         try {
-            logger.info("OTP verified successfully for {}. Attempting to call Auth Service...", email);
+            logger.info("OTP verified successfully for {}. Calling Auth Service with internal secret...", email);
 
-            authServiceClient.updatePassword(email, newPassword);
+            authServiceClient.updatePassword(internalServiceSecret, email, newPassword);
 
             profile.setCurrentOtp(null);
             profile.setOtpExpiry(null);
@@ -276,8 +279,6 @@ public class UserService {
         }
     }
 
-    // =========================================================================
-
     @Transactional
     public void updateLastActive(Long userId) {
         userProfileRepository.updateLastActive(userId);
@@ -288,6 +289,7 @@ public class UserService {
                 .userId(profile.getUserId())
                 .email(profile.getEmail())
                 .name(profile.getName())
+                .role(profile.getRole() != null ? profile.getRole() : "USER")
                 .phoneNumber(profile.getPhoneNumber())
                 .address(profile.getAddress())
                 .profileImageUrl(profile.getProfileImageUrl())

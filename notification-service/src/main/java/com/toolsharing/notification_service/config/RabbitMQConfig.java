@@ -1,9 +1,6 @@
 package com.toolsharing.notification_service.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -16,10 +13,17 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_NAME = "toolshare_exchange";
     public static final String ROUTING_KEY = "notification_routing_key";
 
-    // 1. Define the Queue
+    public static final String DLX_EXCHANGE_NAME = "dlx.exchange";
+    public static final String DLQ_QUEUE_NAME = "dlq.notifications";
+    public static final String DLQ_ROUTING_KEY = "dlx.notifications";
+
+    // 1. Define the main Queue with Dead Letter arguments
     @Bean
     public Queue queue() {
-        return new Queue(QUEUE_NAME, true); // true = durable (survives server restarts)
+        return QueueBuilder.durable(QUEUE_NAME)
+                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE_NAME)
+                .withArgument("x-dead-letter-routing-key", DLQ_ROUTING_KEY)
+                .build();
     }
 
     // 2. Define the Exchange
@@ -34,7 +38,25 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
     }
 
-    // 4. Set up JSON converter so we don't have to parse raw strings
+    // 4. Dead Letter Exchange
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        return new DirectExchange(DLX_EXCHANGE_NAME);
+    }
+
+    // 5. Dead Letter Queue
+    @Bean
+    public Queue deadLetterQueue() {
+        return QueueBuilder.durable(DLQ_QUEUE_NAME).build();
+    }
+
+    // 6. Bind DLQ to DLX
+    @Bean
+    public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange) {
+        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with(DLQ_ROUTING_KEY);
+    }
+
+    // 7. JSON message converter
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();

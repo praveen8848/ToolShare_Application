@@ -49,6 +49,7 @@ public class RedisConfig {
         cacheConfigurations.put("tools", defaultConfig.entryTtl(Duration.ofMinutes(10)));
         cacheConfigurations.put("userTools", defaultConfig.entryTtl(Duration.ofMinutes(5)));
         cacheConfigurations.put("categories", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("userNames", defaultConfig.entryTtl(Duration.ofMinutes(15)));
 
         // Added the searchResults cache we configured in ToolService
         cacheConfigurations.put("searchResults", defaultConfig.entryTtl(Duration.ofMinutes(2)));
