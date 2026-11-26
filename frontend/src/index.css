@@ -5,15 +5,38 @@
 html {
   overflow-y: scroll !important;
   margin-right: 0 !important;
+  min-height: 100%;
+  background-color: #121212;
+  overscroll-behavior-y: none;
 }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #121212;
+  color: #e5e5e5;
   margin: 0;
   padding: 0 !important;
   overflow-x: hidden;
+  min-height: 100vh;
+  overscroll-behavior-y: none;
+}
+
+#root,
+.app-main {
+  min-height: 100vh;
+  background-color: #121212;
+}
+
+.app-loading-screen {
+  min-height: 100vh;
+  padding-top: 76px;
+  background-color: #121212;
+}
+
+.app-loading-spinner {
+  color: #34d399;
+  border-color: currentColor;
+  border-right-color: transparent;
 }
 
 /* Override Bootstrap's scrollbar compensation */
@@ -182,6 +205,11 @@ body.offcanvas-open {
   box-sizing: border-box !important;
 }
 
+.Toastify__toast-container--top-right {
+  top: calc(76px + env(safe-area-inset-top)) !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+}
+
 .Toastify__toast {
   position: relative !important;
   background: #1E1E1E !important;
@@ -290,4 +318,12 @@ body.offcanvas-open {
 .Toastify__toast-container {
   width: 400px !important;
   max-width: 94vw !important;
+}
+
+@media (max-width: 576px) {
+  .Toastify__toast-container--top-right {
+    top: calc(76px + env(safe-area-inset-top)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+  }
 }

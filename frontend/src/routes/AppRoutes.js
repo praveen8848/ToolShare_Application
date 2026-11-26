@@ -72,9 +72,9 @@ const AppRoutes = () => {
         path="/"
         element={
           loading ? (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }} role="status">
+            <div className="app-loading-screen d-flex justify-content-center align-items-center" role="status">
               <span className="visually-hidden">Loading...</span>
-              <div className="spinner-border text-primary" />
+              <div className="spinner-border app-loading-spinner" />
             </div>
           ) : isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/landing" />
         }

@@ -7,8 +7,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-        <div className="spinner-border text-primary" role="status">
+      <div className="app-loading-screen d-flex justify-content-center align-items-center">
+        <div className="spinner-border app-loading-spinner" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>

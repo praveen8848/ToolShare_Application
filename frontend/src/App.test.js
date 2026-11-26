@@ -35,7 +35,7 @@ describe('root route', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveClass('app-loading-screen');
     expect(screen.queryByText('Landing page')).not.toBeInTheDocument();
   });
 

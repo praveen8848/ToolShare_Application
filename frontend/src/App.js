@@ -19,20 +19,20 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <NavigationBar />
-          <main>
+          <main className="app-main">
             <AppRoutes />
           </main>
           <ToastContainer
             position="top-right"
-            autoClose={3000}
+            autoClose={5000}
             hideProgressBar={false}
             newestOnTop
-            closeOnClick
+            closeOnClick={false}
             rtl={false}
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme="light"
+            theme="dark"
           />
         </AuthProvider>
       </BrowserRouter>
