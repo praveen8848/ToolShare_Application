@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import toolService from '../services/toolService';
 import { toast } from 'react-toastify';
 
@@ -6,6 +6,7 @@ export const useTools = () => {
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const requestId = useRef(0);
   const [filters, setFilters] = useState({
     search: '',
     category: '',
@@ -13,21 +14,31 @@ export const useTools = () => {
   });
 
   const fetchTools = useCallback(async () => {
+    const currentRequestId = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
       const data = await toolService.getAllTools(filters);
-      setTools(data);
+      if (currentRequestId === requestId.current) {
+        setTools(data);
+      }
     } catch (err) {
-      setError(err.message);
-      toast.error('Failed to load tools');
+      if (currentRequestId === requestId.current) {
+        setError(err.message);
+        toast.error('Failed to load tools');
+      }
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestId.current) {
+        setLoading(false);
+      }
     }
   }, [filters]);
 
   useEffect(() => {
     fetchTools();
+    return () => {
+      requestId.current += 1;
+    };
   }, [fetchTools]);
 
   const updateFilters = (newFilters) => {

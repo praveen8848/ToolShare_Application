@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Card, Button, Spinner, Row, Col } from 'react-bootstrap';
+import { Container, Button, Spinner, Row, Col } from 'react-bootstrap';
 import { 
   FaArrowLeft, FaCalendarAlt, FaCheckCircle, FaTools, 
   FaUser, FaStar, FaShieldAlt, FaChartPie
 } from 'react-icons/fa';
-import NavigationBar from '../components/common/Navbar';
 
 const OwnerProfile = () => {
   const { ownerId } = useParams();
@@ -17,7 +16,8 @@ const OwnerProfile = () => {
   useEffect(() => {
     const fetchOwnerProfile = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/bookings/public/owner-profile/${ownerId}`, {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+        const response = await fetch(`${apiUrl}/api/bookings/public/owner-profile/${ownerId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (!response.ok) throw new Error("Failed to load owner profile.");
@@ -49,7 +49,6 @@ const OwnerProfile = () => {
     return (
       <div className="owner-profile-wrapper">
         <style>{`.owner-profile-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
-        <NavigationBar />
         <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: 'calc(100vh - 76px)', color: '#A3A3A3' }}>
           <Spinner animation="border" style={{ color: '#34D399', width: '3rem', height: '3rem', marginBottom: '1rem' }} />
           <p>Loading owner profile...</p>
@@ -62,7 +61,6 @@ const OwnerProfile = () => {
     return (
       <div className="owner-profile-wrapper">
         <style>{`.owner-profile-wrapper { background: #121212; min-height: 100vh; padding-top: 76px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }`}</style>
-        <NavigationBar />
         <Container className="py-5">
           <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '14px', padding: '2.5rem', textAlign: 'center', color: '#FCA5A5', maxWidth: '440px', margin: '0 auto' }}>
             <h4 style={{ marginBottom: '1rem' }}>⚠️ {error}</h4>
@@ -266,8 +264,6 @@ const OwnerProfile = () => {
           }
         `}
       </style>
-
-      <NavigationBar />
 
       <Container style={{ maxWidth: '800px' }}>
         <button className="back-btn" onClick={() => navigate(-1)}>

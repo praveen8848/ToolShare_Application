@@ -7,7 +7,7 @@ import categoryService from '../services/categoryService';
 import { 
   FaSearch, FaPlus, FaCalendarAlt, FaArrowRight, FaTools, 
   FaLayerGroup, FaClipboardCheck, FaHandshake, FaUndo,
-  FaRupeeSign, FaMapMarkerAlt, FaStar, FaUsers, FaLeaf
+  FaRupeeSign, FaLeaf
 } from 'react-icons/fa';
 
 const DashboardPage = () => {
@@ -15,8 +15,6 @@ const DashboardPage = () => {
   const [stats, setStats] = useState({ 
     totalTools: 0, 
     totalCategories: 0, 
-    totalUsers: 0,
-    totalRentals: 0,
     loading: true 
   });
 
@@ -30,8 +28,6 @@ const DashboardPage = () => {
         setStats({ 
           totalTools: tools?.length || 0, 
           totalCategories: categories?.length || 0,
-          totalUsers: 5280,
-          totalRentals: 12450,
           loading: false 
         });
       } catch (error) {
@@ -101,12 +97,6 @@ const DashboardPage = () => {
           .stat-card h3 {
             color: #F5F5F5;
             font-weight: 700;
-          }
-
-          .stat-growth {
-            color: #34D399;
-            font-size: 0.8rem;
-            font-weight: 600;
           }
 
           /* Action Cards */
@@ -258,52 +248,26 @@ const DashboardPage = () => {
           Platform Overview
         </h6>
         <Row className="mb-5 g-3">
-          <Col md={3} sm={6}>
+          <Col md={6} sm={6}>
             <div className="stat-card">
-              <div className="d-flex align-items-center justify-content-between mb-3">
+              <div className="mb-3">
                 <FaTools size={20} style={{ color: '#34D399' }} />
-                <span className="stat-growth">↑ 12%</span>
               </div>
               <h3 className="mb-1">
                 {stats.loading ? <Spinner animation="border" size="sm" /> : stats.totalTools.toLocaleString('en-IN')}
               </h3>
-              <p className="mb-0" style={{ color: '#A3A3A3', fontSize: '0.85rem' }}>Active Tools</p>
+              <p className="mb-0" style={{ color: '#A3A3A3', fontSize: '0.85rem' }}>Tools Listed</p>
             </div>
           </Col>
-          <Col md={3} sm={6}>
+          <Col md={6} sm={6}>
             <div className="stat-card">
-              <div className="d-flex align-items-center justify-content-between mb-3">
+              <div className="mb-3">
                 <FaLayerGroup size={20} style={{ color: '#34D399' }} />
-                <span className="stat-growth">↑ 8%</span>
               </div>
               <h3 className="mb-1">
                 {stats.loading ? <Spinner animation="border" size="sm" /> : stats.totalCategories}
               </h3>
               <p className="mb-0" style={{ color: '#A3A3A3', fontSize: '0.85rem' }}>Categories</p>
-            </div>
-          </Col>
-          <Col md={3} sm={6}>
-            <div className="stat-card">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <FaUsers size={20} style={{ color: '#34D399' }} />
-                <span className="stat-growth">↑ 25%</span>
-              </div>
-              <h3 className="mb-1">
-                {stats.loading ? <Spinner animation="border" size="sm" /> : stats.totalUsers.toLocaleString('en-IN')}+
-              </h3>
-              <p className="mb-0" style={{ color: '#A3A3A3', fontSize: '0.85rem' }}>Community Members</p>
-            </div>
-          </Col>
-          <Col md={3} sm={6}>
-            <div className="stat-card">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <FaHandshake size={20} style={{ color: '#34D399' }} />
-                <span className="stat-growth">↑ 18%</span>
-              </div>
-              <h3 className="mb-1">
-                {stats.loading ? <Spinner animation="border" size="sm" /> : stats.totalRentals.toLocaleString('en-IN')}+
-              </h3>
-              <p className="mb-0" style={{ color: '#A3A3A3', fontSize: '0.85rem' }}>Successful Rentals</p>
             </div>
           </Col>
         </Row>
@@ -321,7 +285,7 @@ const DashboardPage = () => {
               </div>
               <h4 className="mb-2">Find Tools</h4>
               <p className="mb-3" style={{ color: '#A3A3A3', lineHeight: '1.5', fontSize: '0.9rem' }}>
-                Browse thousands of tools available in your neighborhood.
+                Browse tools available in your neighborhood.
               </p>
               <div className="btn-icon-link" style={{ color: '#34D399' }}>
                 Browse Inventory <FaArrowRight size={12} />
@@ -335,7 +299,7 @@ const DashboardPage = () => {
               </div>
               <h4 className="mb-2">List a Tool</h4>
               <p className="mb-3" style={{ color: '#A3A3A3', lineHeight: '1.5', fontSize: '0.9rem' }}>
-                Put your idle tools to work and earn up to ₹5,000/month.
+                Share your tools with your community.
               </p>
               <div className="btn-icon-link" style={{ color: '#34D399' }}>
                 Create Listing <FaArrowRight size={12} />
@@ -406,18 +370,6 @@ const DashboardPage = () => {
               </div>
             </Col>
           </Row>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-5">
-          <p style={{ color: '#737373', fontSize: '0.85rem' }}>
-            <FaMapMarkerAlt className="me-1" size={11} />
-            Available in 50+ Indian cities • 
-            <FaStar className="ms-3 me-1" size={11} color="#FBBF24" />
-            4.9 ★ Community Rating •
-            <FaRupeeSign className="ms-3 me-1" size={11} />
-            Secure UPI Payments
-          </p>
         </div>
 
       </Container>

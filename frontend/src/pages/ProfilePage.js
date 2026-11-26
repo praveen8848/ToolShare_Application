@@ -5,13 +5,13 @@ import userService from '../services/userService';
 import ownerService from '../services/ownerService';
 import bookingService from '../services/bookingService';
 import { toast } from 'react-toastify';
-import { FaEnvelope, FaCheckCircle, FaCalendarAlt, FaRupeeSign, FaTools } from 'react-icons/fa';
+import { FaEnvelope, FaCheckCircle, FaCalendarAlt } from 'react-icons/fa';
 
 const ProfilePage = () => {
   const { refreshUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [stats, setStats] = useState({ tools: 0, rentals: 0, successRate: 0, totalEarnings: 0, calculating: true });
+  const [stats, setStats] = useState({ tools: 0, rentals: 0, completedRentals: 0, successRate: 0, calculating: true });
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -33,8 +33,8 @@ const ProfilePage = () => {
       setStats({
         tools: tools.length,
         rentals: bookings.length,
+        completedRentals: completed,
         successRate: finished > 0 ? Math.round((completed / finished) * 100) : 100,
-        totalEarnings: bookings.filter(b => b.status === 'COMPLETED').reduce((s, b) => s + (b.totalAmount || 0), 0),
         calculating: false
       });
     } catch { toast.error('Failed to load profile'); }
@@ -153,7 +153,7 @@ const ProfilePage = () => {
               { icon: '🔧', num: stats.tools, label: 'Tools Listed' },
               { icon: '📅', num: stats.rentals, label: 'Total Rentals' },
               { icon: '✅', num: `${stats.successRate}%`, label: 'Success Rate' },
-              { icon: '💰', num: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, label: 'Earnings' },
+              { icon: '↩️', num: stats.completedRentals, label: 'Completed Rentals' },
             ].map((s, i) => (
               <Col xs={6} key={i}>
                 <div className="stat-box">

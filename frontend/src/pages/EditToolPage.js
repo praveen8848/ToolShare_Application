@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Card, Row, Col, Image, Alert, Spinner, InputGroup } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Container, Form, Button, Row, Col, Image, Spinner, InputGroup } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { 
@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 import toolService from '../services/toolService';
 import categoryService from '../services/categoryService';
+import { readImageFiles } from '../utils/imageHelpers';
 import { toast } from 'react-toastify';
 
 const EditToolPage = () => {
@@ -19,6 +20,8 @@ const EditToolPage = () => {
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [pendingImages, setPendingImages] = useState(0);
+  const pendingImageCount = useRef(0);
   
   const [formData, setFormData] = useState({
     name: '', description: '', categoryId: '', dailyRate: '', weeklyRate: '',
@@ -38,8 +41,8 @@ const EditToolPage = () => {
       ]);
       setFormData({
         name: tool.name || '', description: tool.description || '', categoryId: tool.categoryId || '',
-        dailyRate: tool.dailyRate || '', weeklyRate: tool.weeklyRate || '', monthlyRate: tool.monthlyRate || '',
-        depositAmount: tool.depositAmount || '', status: tool.status || 'AVAILABLE',
+        dailyRate: tool.dailyRate ?? '', weeklyRate: tool.weeklyRate ?? '', monthlyRate: tool.monthlyRate ?? '',
+        depositAmount: tool.depositAmount ?? '', status: tool.status || 'AVAILABLE',
         pincode: tool.pincode || '', city: tool.city || '', state: tool.state || '',
         pickupInstructions: tool.pickupInstructions || '', ownerContact: tool.ownerContact || '',
         contactMethod: tool.contactMethod || 'BOTH'
@@ -55,18 +58,29 @@ const EditToolPage = () => {
   };
 
   const onDrop = (acceptedFiles) => {
-    const newPreviews = [...newImagePreviews];
-    const newImagesList = [...newImages];
-    acceptedFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newImagesList.push(reader.result);
-        newPreviews.push(reader.result);
-        setNewImages(newImagesList);
-        setNewImagePreviews(newPreviews);
-      };
-      reader.readAsDataURL(file);
-    });
+    const remainingSlots = Math.max(0, 5 - existingImages.length - newImages.length - pendingImageCount.current);
+    const filesToRead = acceptedFiles.slice(0, remainingSlots);
+
+    if (filesToRead.length < acceptedFiles.length) {
+      toast.error('A tool can have a maximum of five images.');
+    }
+    if (filesToRead.length === 0) return;
+
+    pendingImageCount.current += filesToRead.length;
+    setPendingImages(pendingImageCount.current);
+    readImageFiles(filesToRead)
+      .then(dataUrls => {
+        setNewImages(prev => [...prev, ...dataUrls]);
+        setNewImagePreviews(prev => [...prev, ...dataUrls]);
+      })
+      .catch(error => {
+        console.error('Failed to read selected images:', error);
+        toast.error('Failed to read selected images');
+      })
+      .finally(() => {
+        pendingImageCount.current -= filesToRead.length;
+        setPendingImages(pendingImageCount.current);
+      });
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -89,7 +103,8 @@ const EditToolPage = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Tool name is required';
     if (!formData.categoryId) newErrors.categoryId = 'Category is required';
-    if (!formData.dailyRate || parseFloat(formData.dailyRate) < 0) newErrors.dailyRate = 'Valid daily rate is required';
+    const dailyRate = Number(formData.dailyRate);
+    if (formData.dailyRate === '' || !Number.isFinite(dailyRate) || dailyRate < 0) newErrors.dailyRate = 'Valid daily rate is required';
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.state.trim()) newErrors.state = 'State is required';
@@ -549,8 +564,8 @@ const EditToolPage = () => {
 
           <div className="action-bar">
             <Button className="btn-outline" onClick={() => navigate('/my-tools')} disabled={saving}>Cancel</Button>
-            <Button className="btn-mint" type="submit" disabled={saving}>
-              {saving ? <><Spinner animation="border" size="sm" className="me-2" /> Saving...</> : <><FaSave className="me-2" /> Save Changes</>}
+            <Button className="btn-mint" type="submit" disabled={saving || pendingImages > 0}>
+              {saving ? <><Spinner animation="border" size="sm" className="me-2" /> Saving...</> : pendingImages > 0 ? 'Reading images...' : <><FaSave className="me-2" /> Save Changes</>}
             </Button>
           </div>
         </Form>

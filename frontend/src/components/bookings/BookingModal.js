@@ -33,28 +33,53 @@ const BookingModal = ({ show, onHide, tool }) => {
     return `${year}-${month}-${day}`;
   };
 
+  const availabilityKey = startDate && endDate && tool
+    ? `${tool.id}:${formatDateForAPI(startDate)}:${formatDateForAPI(endDate)}`
+    : null;
+  const currentAvailability = availability?.key === availabilityKey
+    ? availability.result
+    : null;
+
   // Check availability when dates change
   useEffect(() => {
     if (startDate && endDate && tool) {
+      let isCurrentRequest = true;
+      const requestKey = `${tool.id}:${formatDateForAPI(startDate)}:${formatDateForAPI(endDate)}`;
+
+      setAvailability(null);
+      setCheckingAvailability(true);
+
       const checkAvailability = async () => {
-        setCheckingAvailability(true);
         try {
           const result = await bookingService.checkAvailability(
             tool.id,
             formatDateForAPI(startDate),
             formatDateForAPI(endDate)
           );
-          setAvailability(result);
+          if (isCurrentRequest) {
+            setAvailability({ key: requestKey, result });
+          }
         } catch (err) {
           console.error('Availability check failed:', err);
-          setAvailability({ available: false, message: 'Failed to check availability' });
+          if (isCurrentRequest) {
+            setAvailability({
+              key: requestKey,
+              result: { available: false, message: 'Failed to check availability' }
+            });
+          }
         } finally {
-          setCheckingAvailability(false);
+          if (isCurrentRequest) {
+            setCheckingAvailability(false);
+          }
         }
       };
       checkAvailability();
+      return () => {
+        isCurrentRequest = false;
+      };
     } else {
       setAvailability(null);
+      setCheckingAvailability(false);
     }
   }, [startDate, endDate, tool]);
 
@@ -65,7 +90,7 @@ const BookingModal = ({ show, onHide, tool }) => {
   };
 
   const calculateTotal = () => {
-    if (!tool || !availability?.available) return 0;
+    if (!tool || !currentAvailability?.available) return 0;
     const days = calculateDays();
     return days * tool.dailyRate;
   };
@@ -73,6 +98,14 @@ const BookingModal = ({ show, onHide, tool }) => {
   const handleBooking = async () => {
     if (!startDate || !endDate) {
       toast.error('Please select dates');
+      return;
+    }
+    if (checkingAvailability) {
+      toast.info('Please wait while availability is checked');
+      return;
+    }
+    if (!currentAvailability?.available) {
+      toast.error('The selected dates are not available');
       return;
     }
 
@@ -195,26 +228,26 @@ const BookingModal = ({ show, onHide, tool }) => {
               </div>
             )}
 
-            {availability && !checkingAvailability && (
-              <Alert variant={availability.available ? 'success' : 'danger'}>
-                {availability.available ? (
+            {currentAvailability && !checkingAvailability && (
+              <Alert variant={currentAvailability.available ? 'success' : 'danger'}>
+                {currentAvailability.available ? (
                   <>
                     <strong>✅ Available!</strong> You can book this tool.
-                    {availability.pendingRequests > 0 && (
+                    {currentAvailability.pendingRequests > 0 && (
                       <p className="mb-0 mt-1 small">
-                        ⚠️ {availability.pendingRequests} other request(s) pending for these dates.
+                        ⚠️ {currentAvailability.pendingRequests} other request(s) pending for these dates.
                       </p>
                     )}
                   </>
                 ) : (
                   <>
                     <strong>❌ Not Available</strong>
-                    <p className="mb-0 mt-1">{availability.message}</p>
-                    {availability.suggestedDates?.length > 0 && (
+                    <p className="mb-0 mt-1">{currentAvailability.message}</p>
+                    {currentAvailability.suggestedDates?.length > 0 && (
                       <div className="mt-2">
                         <small>Suggested dates:</small>
                         <ul className="mb-0 mt-1">
-                          {availability.suggestedDates.map((date, idx) => (
+                          {currentAvailability.suggestedDates.map((date, idx) => (
                             <li key={idx}>
                               {date.startDate} to {date.endDate} ({date.days} days)
                             </li>
@@ -227,7 +260,7 @@ const BookingModal = ({ show, onHide, tool }) => {
               </Alert>
             )}
 
-            {startDate && endDate && availability?.available && (
+            {startDate && endDate && currentAvailability?.available && !checkingAvailability && (
               <div className="bg-light p-3 rounded">
                 <h6>Price Breakdown</h6>
                 <div className="d-flex justify-content-between">
@@ -255,11 +288,11 @@ const BookingModal = ({ show, onHide, tool }) => {
         <Button variant="secondary" onClick={handleClose}>
           {bookingSuccess ? 'Close' : 'Cancel'}
         </Button>
-        {!bookingSuccess && startDate && endDate && availability?.available && (
+        {!bookingSuccess && startDate && endDate && currentAvailability?.available && (
           <Button 
             variant="success" 
             onClick={handleBooking}
-            disabled={loading}
+            disabled={loading || checkingAvailability}
           >
             {loading ? <Spinner animation="border" size="sm" /> : 'Confirm Booking'}
           </Button>

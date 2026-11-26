@@ -1,0 +1,133 @@
+.pickup-details-modal .modal-content {
+  background: #1e1e1e;
+  color: #e5e5e5;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+}
+
+.pickup-details-modal .modal-header,
+.pickup-details-modal .modal-footer {
+  border-color: #2a2a2a;
+}
+
+.pickup-details-modal .modal-title,
+.pickup-details-modal .form-label {
+  color: #f5f5f5;
+}
+
+.pickup-details-modal .btn-close {
+  filter: invert(1);
+}
+
+.pickup-details-modal .alert-info,
+.pickup-details-modal .alert-warning {
+  background: rgba(16, 185, 129, 0.08);
+  color: #d1fae5;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.pickup-details-modal .form-control,
+.pickup-details-modal .input-group-text {
+  background: #121212;
+  color: #f5f5f5;
+  border-color: #3a3a3a;
+}
+
+.pickup-details-modal .form-control::placeholder {
+  color: #737373;
+}
+
+.pickup-details-modal .form-control:focus {
+  background: #121212;
+  color: #f5f5f5;
+  border-color: #10b981;
+  box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.2);
+}
+
+.pickup-details-modal .form-check-input {
+  background-color: #121212;
+  border-color: #737373;
+}
+
+.pickup-details-modal .form-check-input:checked {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+.pickup-details-modal .pickup-date-help {
+  color: #a3a3a3;
+}
+
+.pickup-details-modal .react-datetime-picker {
+  width: 100%;
+}
+
+.pickup-details-modal .react-datetime-picker__wrapper {
+  min-height: 42px;
+  padding: 0 0.75rem;
+  background: #121212;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.375rem;
+}
+
+.pickup-details-modal .react-datetime-picker__inputGroup,
+.pickup-details-modal .react-datetime-picker__inputGroup__input,
+.pickup-details-modal .react-datetime-picker__button {
+  color: #f5f5f5;
+}
+
+.pickup-details-modal .react-datetime-picker__inputGroup__input {
+  background: transparent;
+}
+
+.pickup-details-modal .react-datetime-picker__button svg {
+  stroke: #34d399;
+}
+
+.pickup-details-modal .react-calendar,
+.pickup-details-modal .react-clock {
+  background: #1e1e1e;
+  color: #e5e5e5;
+  border-color: #3a3a3a;
+}
+
+.pickup-details-modal .react-calendar__navigation button,
+.pickup-details-modal .react-calendar__tile {
+  color: #e5e5e5;
+}
+
+.pickup-details-modal .react-calendar__tile:enabled:hover,
+.pickup-details-modal .react-calendar__tile:enabled:focus {
+  background: #2a2a2a;
+}
+
+.pickup-details-modal .react-calendar__tile--active,
+.pickup-details-modal .react-calendar__tile--active:enabled:hover,
+.pickup-details-modal .react-calendar__tile--active:enabled:focus {
+  background: #10b981;
+  color: #121212;
+}
+
+.pickup-details-modal .pickup-cancel-button {
+  background: #2a2a2a;
+  color: #e5e5e5;
+  border: 1px solid #3a3a3a;
+}
+
+.pickup-details-modal .pickup-cancel-button:hover:not(:disabled) {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.pickup-details-modal .pickup-confirm-button {
+  background: #10b981;
+  color: #121212;
+  border: 1px solid #10b981;
+  font-weight: 600;
+}
+
+.pickup-details-modal .pickup-confirm-button:hover:not(:disabled) {
+  background: #059669;
+  border-color: #059669;
+  color: #121212;
+}

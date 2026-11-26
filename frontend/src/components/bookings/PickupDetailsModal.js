@@ -5,6 +5,19 @@ import DateTimePicker from 'react-datetime-picker';
 import 'react-datetime-picker/dist/DateTimePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import 'react-clock/dist/Clock.css';
+import './PickupDetailsModal.css';
+
+const parseLocalDate = (dateString) => {
+  if (!dateString) return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const formatLocalDateTime = (date) => {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
 const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetails }) => {
   const [pickupDateTime, setPickupDateTime] = useState(null);
@@ -34,19 +47,23 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
     
     if (!pickupDateTime) {
       newErrors.pickupDateTime = 'Please select pickup date and time';
+    } else if (Number.isNaN(pickupDateTime.getTime())) {
+      newErrors.pickupDateTime = 'Please select a valid pickup date and time';
     } else {
-      // Check if pickup is at least 1 DAY before start date (matches backend requirement)
-      const startDate = new Date(booking.startDate);
-      const maxAllowedDateTime = new Date(startDate);
-      maxAllowedDateTime.setDate(maxAllowedDateTime.getDate() - 1); 
-      
-      if (pickupDateTime > maxAllowedDateTime) {
-        newErrors.pickupDateTime = `Pickup must be scheduled at least 1 day before ${booking.startDate}`;
-      }
-      
-      // Check if pickup is not in the past
-      if (pickupDateTime < new Date()) {
-        newErrors.pickupDateTime = 'Pickup date and time cannot be in the past';
+      const startDate = parseLocalDate(booking?.startDate);
+      if (!startDate) {
+        newErrors.pickupDateTime = 'Booking start date is unavailable';
+      } else {
+        const minAllowedDateTime = new Date(startDate);
+        minAllowedDateTime.setDate(minAllowedDateTime.getDate() - 1);
+        const maxAllowedDateTime = new Date(startDate);
+        maxAllowedDateTime.setTime(maxAllowedDateTime.getTime() - 1);
+
+        if (pickupDateTime < minAllowedDateTime || pickupDateTime > maxAllowedDateTime) {
+          newErrors.pickupDateTime = `Pickup must be scheduled at least 1 day before ${booking.startDate}`;
+        } else if (pickupDateTime < new Date()) {
+          newErrors.pickupDateTime = 'Pickup date and time cannot be in the past';
+        }
       }
     }
     
@@ -71,7 +88,7 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
     setSubmitting(true);
     try {
       await onConfirm({
-        pickupDateTime,
+        pickupDateTime: formatLocalDateTime(pickupDateTime),
         pickupLocation,
         pickupInstructions,
         ownerContact,
@@ -86,26 +103,34 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
   };
 
   const formatDateForDisplay = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    const date = parseLocalDate(dateString);
+    if (!date) return '';
+    return date.toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
 
-  // Calculate MAXIMUM pickup date (1 day before start date)
-  const getMaxPickupDate = () => {
-    if (!booking?.startDate) return new Date();
-    const startDate = new Date(booking.startDate);
+  const getPickupDateBounds = () => {
+    const startDate = parseLocalDate(booking?.startDate);
+    if (!startDate) return { minDate: new Date(), maxDate: new Date() };
+
     const maxDate = new Date(startDate);
-    maxDate.setDate(maxDate.getDate() - 1); 
-    return maxDate;
+    maxDate.setDate(maxDate.getDate() - 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return {
+      minDate: today > maxDate ? today : maxDate,
+      maxDate
+    };
   };
 
+  const { minDate, maxDate } = getPickupDateBounds();
+
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered>
+    <Modal show={show} onHide={onHide} size="lg" centered className="pickup-details-modal">
       <Modal.Header closeButton>
         <Modal.Title>
           <FaCalendarAlt className="me-2" />
@@ -141,8 +166,8 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
               value={pickupDateTime}
               className="form-control"
               format="yyyy-MM-dd h:mm a"
-              minDate={new Date()} // Earliest allowed is right now
-              maxDate={getMaxPickupDate()} // Latest allowed is 1 day before the rental starts
+              minDate={minDate}
+              maxDate={maxDate}
               clearIcon={null}
               disableClock={false}
               amPmAriaLabel="Select AM/PM"
@@ -152,7 +177,7 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
                 {errors.pickupDateTime}
               </Form.Text>
             )}
-            <Form.Text className="text-muted">
+            <Form.Text className="pickup-date-help">
               Pickup must be scheduled at least 1 day before {formatDateForDisplay(booking?.startDate)}
             </Form.Text>
           </Form.Group>
@@ -174,7 +199,7 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
             <Form.Control.Feedback type="invalid">
               {errors.pickupLocation}
             </Form.Control.Feedback>
-            <Form.Text className="text-muted">
+            <Form.Text className="pickup-date-help">
               Include building name, apartment number, landmark, etc.
             </Form.Text>
           </Form.Group>
@@ -191,7 +216,7 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
               onChange={(e) => setPickupInstructions(e.target.value)}
               placeholder="e.g., Call when you arrive, ring bell #4B, I'll come down, door code: 1234"
             />
-            <Form.Text className="text-muted">
+            <Form.Text className="pickup-date-help">
               Any special instructions for the borrower
             </Form.Text>
           </Form.Group>
@@ -215,7 +240,7 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
             <Form.Control.Feedback type="invalid">
               {errors.ownerContact}
             </Form.Control.Feedback>
-            <Form.Text className="text-muted">
+            <Form.Text className="pickup-date-help">
               Phone number where borrower can reach you
             </Form.Text>
           </Form.Group>
@@ -269,10 +294,10 @@ const PickupDetailsModal = ({ show, onHide, booking, onConfirm, toolPickupDetail
       </Modal.Body>
       
       <Modal.Footer>
-        <Button variant="secondary" onClick={onHide} disabled={submitting}>
+        <Button className="pickup-cancel-button" onClick={onHide} disabled={submitting}>
           Cancel
         </Button>
-        <Button variant="success" onClick={handleSubmit} disabled={submitting}>
+        <Button className="pickup-confirm-button" onClick={handleSubmit} disabled={submitting}>
           {submitting ? (
             <>
               <Spinner animation="border" size="sm" className="me-2" />

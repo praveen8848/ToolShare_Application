@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import toolService from '../services/toolService';
 import categoryService from '../services/categoryService';
+import { readImageFiles } from '../utils/imageHelpers';
 import { toast } from 'react-toastify';
 
 const AddToolPage = () => {
@@ -26,9 +27,11 @@ const AddToolPage = () => {
   });
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [pendingImages, setPendingImages] = useState(0);
   const [errors, setErrors] = useState({});
   const [isFirstTool, setIsFirstTool] = useState(false);
   const loadedRef = useRef(false);
+  const pendingImageCount = useRef(0);
 
   useEffect(() => {
     if (loadedRef.current) return;
@@ -74,18 +77,29 @@ const AddToolPage = () => {
   };
 
   const onDrop = (acceptedFiles) => {
-    const newImages = [...images];
-    const newPreviews = [...imagePreviews];
-    acceptedFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newImages.push(reader.result);
-        newPreviews.push(reader.result);
-        setImages([...newImages]);
-        setImagePreviews([...newPreviews]);
-      };
-      reader.readAsDataURL(file);
-    });
+    const remainingSlots = Math.max(0, 5 - images.length - pendingImageCount.current);
+    const filesToRead = acceptedFiles.slice(0, remainingSlots);
+
+    if (filesToRead.length < acceptedFiles.length) {
+      toast.error('You can upload a maximum of five images.');
+    }
+    if (filesToRead.length === 0) return;
+
+    pendingImageCount.current += filesToRead.length;
+    setPendingImages(pendingImageCount.current);
+    readImageFiles(filesToRead)
+      .then(dataUrls => {
+        setImages(prev => [...prev, ...dataUrls]);
+        setImagePreviews(prev => [...prev, ...dataUrls]);
+      })
+      .catch(error => {
+        console.error('Failed to read selected images:', error);
+        toast.error('Failed to read selected images');
+      })
+      .finally(() => {
+        pendingImageCount.current -= filesToRead.length;
+        setPendingImages(pendingImageCount.current);
+      });
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': [] }, maxFiles: 5 });
@@ -548,9 +562,9 @@ const AddToolPage = () => {
 
                   <div className="d-flex gap-3 mt-4 pt-3">
                     <Button className="btn-outline" onClick={() => navigate('/my-tools')} disabled={loading}>Cancel</Button>
-                    <Button className="btn-mint flex-grow-1" type="submit" disabled={loading}>
+                    <Button className="btn-mint flex-grow-1" type="submit" disabled={loading || pendingImages > 0}>
                       {loading ? <Spinner animation="border" size="sm" className="me-2" /> : <FaPlus className="me-2" size={14} />}
-                      {loading ? 'Creating...' : 'List Tool'}
+                      {loading ? 'Creating...' : pendingImages > 0 ? 'Reading images...' : 'List Tool'}
                     </Button>
                   </div>
                 </Form>

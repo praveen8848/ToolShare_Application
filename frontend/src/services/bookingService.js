@@ -51,7 +51,7 @@ const bookingService = {
     return response.data;
   },
 
-  // Confirm return (owner confirms after scanning QR)
+  // Confirm return (owner confirms the borrower's return request)
   confirmReturn: async (id) => {
     const response = await api.post(`/api/bookings/${id}/confirm-return`);
     return response.data;

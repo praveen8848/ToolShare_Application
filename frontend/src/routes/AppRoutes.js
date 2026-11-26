@@ -9,7 +9,6 @@ import DashboardPage from '../pages/DashboardPage';
 import BrowseToolsPage from '../pages/BrowseToolsPage';
 import ToolDetailsPage from '../pages/ToolDetailsPage';
 import MyBookingsPage from '../pages/MyBookingsPage';
-import ReturnPage from '../pages/ReturnPage';
 import OwnerDashboardPage from '../pages/OwnerDashboardPage';
 import MyToolsPage from '../pages/MyToolsPage';
 import AddToolPage from '../pages/AddToolPage';
@@ -23,7 +22,7 @@ import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import OwnerProfile from '../pages/OwnerProfile'; 
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   return (
     <Routes>
@@ -56,7 +55,6 @@ const AppRoutes = () => {
       <Route path="/browse" element={<ProtectedRoute><BrowseToolsPage /></ProtectedRoute>} />
       <Route path="/tools/:id" element={<ProtectedRoute><ToolDetailsPage /></ProtectedRoute>} />
       <Route path="/my-bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
-      <Route path="/return/:id" element={<ProtectedRoute><ReturnPage /></ProtectedRoute>} />
       <Route path="/owner-dashboard" element={<ProtectedRoute><OwnerDashboardPage /></ProtectedRoute>} />
       <Route path="/my-tools" element={<ProtectedRoute><MyToolsPage /></ProtectedRoute>} />
       <Route path="/add-tool" element={<ProtectedRoute><AddToolPage /></ProtectedRoute>} />
@@ -73,7 +71,12 @@ const AppRoutes = () => {
       <Route
         path="/"
         element={
-          isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/landing" />
+          loading ? (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }} role="status">
+              <span className="visually-hidden">Loading...</span>
+              <div className="spinner-border text-primary" />
+            </div>
+          ) : isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/landing" />
         }
       />
 

@@ -8,7 +8,6 @@ import {
 import { useBookings } from '../hooks/useBookings';
 import { formatDate, formatDateTime } from '../utils/dateHelpers';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 
 const MyBookingsPage = () => {
   const { bookings, loading, error, cancelBooking, deleteBooking, requestReturn } = useBookings();
@@ -18,9 +17,11 @@ const MyBookingsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState(null);
   const [expandedBooking, setExpandedBooking] = useState(null);
+  const [activeTab, setActiveTab] = useState('pending');
 
   const pendingBookings = bookings?.filter(b => b.status === 'PENDING') || [];
   const confirmedBookings = bookings?.filter(b => b.status === 'CONFIRMED') || [];
+  const returnRequestedBookings = bookings?.filter(b => b.status === 'RETURN_REQUESTED') || [];
   const rejectedBookings = bookings?.filter(b => b.status === 'REJECTED') || [];
   const cancelledBookings = bookings?.filter(b => b.status === 'CANCELLED') || [];
   const completedBookings = bookings?.filter(b => b.status === 'COMPLETED') || [];
@@ -29,6 +30,7 @@ const MyBookingsPage = () => {
     const config = {
       'PENDING':   { bg: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: 'rgba(245,158,11,0.2)', icon: <FaClock size={10} />, label: 'Pending' },
       'CONFIRMED': { bg: 'rgba(16,185,129,0.1)', color: '#34D399', border: 'rgba(16,185,129,0.2)', icon: <FaCheckCircle size={10} />, label: 'Confirmed' },
+      'RETURN_REQUESTED': { bg: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: 'rgba(245,158,11,0.2)', icon: <FaClock size={10} />, label: 'Return Requested' },
       'REJECTED':  { bg: 'rgba(239,68,68,0.1)', color: '#EF4444', border: 'rgba(239,68,68,0.2)', icon: <FaTimesCircle size={10} />, label: 'Rejected' },
       'CANCELLED': { bg: 'rgba(115,115,115,0.1)', color: '#737373', border: 'rgba(115,115,115,0.2)', icon: <FaTimesCircle size={10} />, label: 'Cancelled' },
       'COMPLETED': { bg: 'rgba(16,185,129,0.1)', color: '#34D399', border: 'rgba(16,185,129,0.2)', icon: <FaCheckCircle size={10} />, label: 'Completed' },
@@ -57,7 +59,8 @@ const MyBookingsPage = () => {
 
   const handleRequestReturn = async (bookingId) => {
     setProcessing(bookingId);
-    await requestReturn(bookingId);
+    const success = await requestReturn(bookingId);
+    if (success) setActiveTab('returns');
     setProcessing(null);
   };
 
@@ -122,6 +125,11 @@ const MyBookingsPage = () => {
             <Button className="btn-outline-danger w-100" onClick={() => handleCancelBooking(booking.id)} disabled={processing === booking.id}>
               {processing === booking.id ? <Spinner animation="border" size="sm" /> : <><FaTimesCircle className="me-2" size={12} /> Cancel Request</>}
             </Button>
+          )}
+          {booking.status === 'RETURN_REQUESTED' && (
+            <div className="pickup-pending" role="status">
+              <FaClock size={12} /> Return requested. Waiting for owner confirmation.
+            </div>
           )}
           {canDelete(booking) && (
             <Button className="btn-delete w-100 mt-2" onClick={() => { setBookingToDelete(booking); setShowDeleteModal(true); }}>
@@ -440,10 +448,11 @@ const MyBookingsPage = () => {
               </Button>
             </div>
           ) : (
-            <Tabs defaultActiveKey="pending" className="nav-tabs-custom mb-4">
+            <Tabs activeKey={activeTab} onSelect={key => key && setActiveTab(key)} className="nav-tabs-custom mb-4">
               {[
                 { key: 'pending', data: pendingBookings, icon: <FaClock size={28} />, emptyTitle: 'No Pending Requests', emptyMsg: 'No bookings awaiting approval.' },
                 { key: 'confirmed', data: confirmedBookings, icon: <FaCheckCircle size={28} />, emptyTitle: 'No Confirmed Bookings', emptyMsg: 'No upcoming confirmed rentals.' },
+                { key: 'returns', data: returnRequestedBookings, icon: <FaClock size={28} />, emptyTitle: 'No Return Requests', emptyMsg: 'Return requests awaiting owner confirmation will appear here.' },
                 { key: 'rejected', data: rejectedBookings, icon: <FaTimesCircle size={28} />, emptyTitle: 'No Rejected Requests', emptyMsg: 'None of your requests have been rejected.' },
                 { key: 'cancelled', data: cancelledBookings, icon: <FaTimesCircle size={28} />, emptyTitle: 'No Cancelled Bookings', emptyMsg: 'You haven\'t cancelled any requests.' },
                 { key: 'completed', data: completedBookings, icon: <FaCheckCircle size={28} />, emptyTitle: 'No Completed Bookings', emptyMsg: 'Your history of returned tools will appear here.' },
@@ -478,6 +487,7 @@ const MyBookingsPage = () => {
             </Button>
           </Modal.Footer>
         </Modal>
+
       </div>
     </>
   );

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Tabs, Tab } from 'react-bootstrap';
 import { 
   FaCheckCircle, FaTimesCircle, FaClock, FaTools, FaCalendarAlt, 
-  FaUser, FaQrcode, FaRupeeSign, FaMapMarkerAlt, FaStar,
+  FaUser, FaMapMarkerAlt,
   FaArrowRight, FaExternalLinkAlt
 } from 'react-icons/fa';
 import ownerService from '../services/ownerService';
@@ -23,7 +23,6 @@ const OwnerDashboardPage = () => {
   const [showPickupModal, setShowPickupModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [toolPickupDetails, setToolPickupDetails] = useState(null);
-  const [stats, setStats] = useState({ totalEarnings: 0, totalRentals: 0, averageRating: 0 });
 
   useEffect(() => { loadData(); }, []);
 
@@ -39,12 +38,6 @@ const OwnerDashboardPage = () => {
       setRejectedBookings(bookings.filter(b => b.status === 'REJECTED'));
       setMyTools(tools);
       setReturnRequests(returns);
-      const completed = bookings.filter(b => b.status === 'COMPLETED');
-      setStats({
-        totalEarnings: completed.reduce((sum, b) => sum + (b.totalAmount || 0), 0),
-        totalRentals: completed.length,
-        averageRating: 4.8
-      });
     } catch (error) {
       toast.error('Failed to load dashboard data');
     } finally {
@@ -310,14 +303,14 @@ const OwnerDashboardPage = () => {
         
         <div className="dashboard-header">
           <h1>Owner Dashboard</h1>
-          <p style={{ color: '#A3A3A3', fontSize: '0.95rem' }}>Manage your tools, bookings, and earnings</p>
+          <p style={{ color: '#A3A3A3', fontSize: '0.95rem' }}>Manage your tools and bookings</p>
         </div>
 
         <Row className="g-3 mb-4">
           {[
-            { label: 'Total Earnings', value: `₹${stats.totalEarnings.toLocaleString('en-IN')}`, icon: <FaRupeeSign size={20} />, sub: '↑ 12% from last month' },
-            { label: 'Total Rentals', value: stats.totalRentals, icon: <FaTools size={20} />, sub: `${myTools.length} active tools listed` },
-            { label: 'Average Rating', value: `${stats.averageRating} ★`, icon: <FaStar size={20} />, sub: `Based on ${stats.totalRentals} reviews` },
+            { label: 'Pending Requests', value: pendingBookings.length, icon: <FaClock size={20} />, sub: 'Awaiting your approval' },
+            { label: 'Return Requests', value: returnRequests.length, icon: <FaClock size={20} />, sub: 'Awaiting your confirmation' },
+            { label: 'Tools Listed', value: myTools.length, icon: <FaTools size={20} />, sub: 'Your current listings' },
           ].map((stat, i) => (
             <Col md={4} key={i}>
               <div className="stat-card">
@@ -409,10 +402,10 @@ const OwnerDashboardPage = () => {
             )}
           </Tab>
 
-          <Tab eventKey="returns" title={<span><FaQrcode className="me-2" size={12} /> Returns ({returnRequests.length})</span>}>
+          <Tab eventKey="returns" title={<span><FaClock className="me-2" size={12} /> Returns ({returnRequests.length})</span>}>
             {returnRequests.length === 0 ? (
               <div className="empty-state">
-                <FaQrcode size={36} style={{ color: '#737373', marginBottom: '1rem' }} />
+                <FaClock size={36} style={{ color: '#737373', marginBottom: '1rem' }} />
                 <h4 style={{ color: '#F5F5F5', marginBottom: '0.5rem' }}>No Return Requests</h4>
                 <p style={{ color: '#A3A3A3', fontSize: '0.9rem' }}>When borrowers request to return tools, they'll appear here.</p>
               </div>
