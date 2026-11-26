@@ -1027,6 +1027,8 @@ Run the complete platform locally:
 docker compose up --build
 ```
 
+Open the frontend at [http://localhost:3000](http://localhost:3000). By default, it calls the API gateway at `http://localhost:8080`. For another deployment URL, set `REACT_APP_API_URL` and `REACT_APP_API_GATEWAY_URL` before building; these values are embedded in the frontend bundle.
+
 Services started:
 
 - API Gateway

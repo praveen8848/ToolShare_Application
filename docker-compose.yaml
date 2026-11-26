@@ -180,6 +180,18 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_DATA_REDIS_HOST=redis
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8080}
+        REACT_APP_API_GATEWAY_URL: ${REACT_APP_API_GATEWAY_URL:-http://localhost:8080}
+    container_name: toolsharing-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
+
 volumes:
   auth_postgres_data:
   user_postgres_data:
